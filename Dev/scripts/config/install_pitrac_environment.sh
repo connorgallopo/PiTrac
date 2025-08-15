@@ -39,7 +39,7 @@ else
   DETECTED_WEB_DIR="$(detect_lm_shares_dir "WebShare")"
   DEFAULT_WEB_DIR="${PITRAC_WEB_DIR:-$DETECTED_WEB_DIR}"
 fi
-DEFAULT_MSG_BROKER_IP="${PITRAC_MSG_BROKER_IP:-10.0.0.41}"
+DEFAULT_MSG_BROKER_IP="${PITRAC_MSG_BROKER_IP:-localhost}"
 DEFAULT_E6_HOST="${PITRAC_E6_HOST:-}"
 DEFAULT_GSPRO_HOST="${PITRAC_GSPRO_HOST:-}"
 DEFAULT_SLOT1_CAMERA="${PITRAC_SLOT1_CAMERA:-4}"
@@ -84,14 +84,18 @@ prompt_network_config() {
   
   # Detect local network
   local local_ip
-  local_ip=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "10.0.0.100")
-  local subnet
-  subnet=$(echo "$local_ip" | sed 's/\.[0-9]*$//')
+  local_ip=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "127.0.0.1")
   
   echo "Detected local IP: $local_ip"
   
   # ActiveMQ Broker Address
-  local default_broker="${subnet}.41"
+  # Default to localhost for single-machine setups
+  local default_broker="localhost"
+  
+  echo ""
+  echo "For single-machine setup (most common): use 'localhost' or '127.0.0.1'"
+  echo "For multi-machine setup: use the broker machine's IP address"
+  
   PITRAC_MSG_BROKER_IP=$(prompt_with_default "ActiveMQ Broker IP address" "$default_broker")
   
   # Golf Simulator Addresses (optional)
@@ -329,7 +333,7 @@ setup_default_environment() {
   PITRAC_ROOT="$DEFAULT_PITRAC_ROOT"
   PITRAC_IMAGE_DIR="$DEFAULT_IMAGE_DIR"
   PITRAC_WEB_DIR="$DEFAULT_WEB_DIR"
-  PITRAC_MSG_BROKER_IP="10.0.0.41"
+  PITRAC_MSG_BROKER_IP="localhost"
   PITRAC_E6_HOST=""
   PITRAC_GSPRO_HOST=""
   PITRAC_SLOT1_CAMERA="4"
