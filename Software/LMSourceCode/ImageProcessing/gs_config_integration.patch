@@ -1,0 +1,104 @@
+--- a/gs_config.cpp
++++ b/gs_config.cpp
+@@ -8,6 +8,7 @@
+ #include "gs_config.h"
+ #include "logging_tools.h"
++#include "configuration_manager.h"
+ #include "golf_ball.h"
+ #include "GolfSim.h"
+ #include "libcamera_interface.h"
+@@ -26,6 +27,15 @@ bool GolfSimConfiguration::Initialize(const std::string& configuration_filename
+ 		return false;
+ 	}
+ 
++	// Initialize new ConfigurationManager for override support
++	ConfigurationManager& config_mgr = ConfigurationManager::GetInstance();
++	if (!config_mgr.Initialize(configuration_filename)) {
++		GS_LOG_MSG(warning, "ConfigurationManager initialization failed, using JSON only");
++	} else {
++		GS_LOG_MSG(info, "ConfigurationManager initialized with override support");
++	}
++
+ 	std::string full_filename = configuration_filename;
+ 
+ 	try {
+@@ -184,6 +194,17 @@ void GolfSimConfiguration::SetConstant(const std::string& value_tag, bool& cons
+ 	std::string str_value;
+ 	try {
++		// Try ConfigurationManager first for override support
++		ConfigurationManager& config_mgr = ConfigurationManager::GetInstance();
++		if (config_mgr.HasKey(value_tag)) {
++			bool val = config_mgr.GetBool(value_tag, constant_value);
++			if (val != constant_value) {
++				GS_LOG_TRACE_MSG(trace, "Override from ConfigurationManager: " + value_tag + " = " + (val ? "true" : "false"));
++				constant_value = val;
++				return;
++			}
++		}
++
++		// Fall back to original JSON behavior
+ 		str_value = configuration_root_.get<std::string>(value_tag);
+ 
+ 		if (str_value == "0") {
+@@ -212,6 +233,17 @@ void GolfSimConfiguration::SetConstant(const std::string& value_tag, int& const
+ 
+ 	try {
++		// Try ConfigurationManager first for override support
++		ConfigurationManager& config_mgr = ConfigurationManager::GetInstance();
++		if (config_mgr.HasKey(value_tag)) {
++			int val = config_mgr.GetInt(value_tag, constant_value);
++			if (val != constant_value) {
++				GS_LOG_TRACE_MSG(trace, "Override from ConfigurationManager: " + value_tag + " = " + std::to_string(val));
++				constant_value = val;
++				return;
++			}
++		}
++
++		// Fall back to original JSON behavior
+ 		constant_value = configuration_root_.get<int>(value_tag);
+ 		return;
+ 	}
+@@ -249,6 +281,17 @@ void GolfSimConfiguration::SetConstant(const std::string& value_tag, float& con
+ 	}
+ 
+ 	try {
++		// Try ConfigurationManager first for override support
++		ConfigurationManager& config_mgr = ConfigurationManager::GetInstance();
++		if (config_mgr.HasKey(value_tag)) {
++			float val = config_mgr.GetFloat(value_tag, constant_value);
++			if (val != constant_value) {
++				GS_LOG_TRACE_MSG(trace, "Override from ConfigurationManager: " + value_tag + " = " + std::to_string(val));
++				constant_value = val;
++				return;
++			}
++		}
++
++		// Fall back to original JSON behavior
+ 		constant_value = configuration_root_.get<float>(value_tag);
+ 		return;
+ 	}
+@@ -294,6 +337,23 @@ void GolfSimConfiguration::SetConstant(const std::string& value_tag, std::strin
+ 	}
+ 
+ 	try {
++		// Try ConfigurationManager first for override support
++		ConfigurationManager& config_mgr = ConfigurationManager::GetInstance();
++		
++		// First check if there's a mapped YAML key
++		std::string yaml_key = value_tag;
++		// Convert JSON path to potential YAML key (simplified mapping)
++		// e.g., "gs_config.cameras.kCamera1Gain" -> "cameras.camera1_gain"
++		
++		if (config_mgr.HasKey(yaml_key)) {
++			std::string val = config_mgr.GetString(yaml_key, constant_value);
++			if (val != constant_value) {
++				GS_LOG_TRACE_MSG(trace, "Override from ConfigurationManager: " + value_tag + " = " + val);
++				constant_value = val;
++				return;
++			}
++		}
++
++		// Fall back to original JSON behavior
+ 		constant_value = configuration_root_.get<std::string>(value_tag);
+ 
+ 		// Check for environment variable substitution

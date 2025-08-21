@@ -174,6 +174,7 @@ pitrac_lm_sources += ([
 			'gs_club_data.cpp',
 			'gs_options.cpp',
 			'gs_config.cpp',
+			'configuration_manager.cpp',
 			'gs_sim_interface.cpp',
 			'gs_gspro_interface.cpp',
 			'gs_gspro_response.cpp',
