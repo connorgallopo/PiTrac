@@ -46,6 +46,7 @@ namespace golf_sim {
             std::chrono::steady_clock::time_point startTime_;
             GolfBall cam1_ball_;
             cv::Mat ball_image_;
+            std::chrono::steady_clock::time_point camera_setup_start_time_;  // Track when camera2 setup started
         };
 
         struct WaitingForBallHit {

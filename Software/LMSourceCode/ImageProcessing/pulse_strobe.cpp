@@ -61,11 +61,12 @@ namespace golf_sim {
 	bool PulseStrobe::gpio_system_initialized_ = false;
 	int PulseStrobe::kPuttingStrobeDelayMs = 0;
 
-	long PulseStrobe::kCam2SetupPeriodMilliseconds = 2000;
-	int PulseStrobe::kNumberPrimingPulses = 12;
-	int PulseStrobe::kPrimingPulseFPS = 30;
+	// Optimized timing constants - now configurable via JSON or CLI
+	long PulseStrobe::kCam2SetupPeriodMilliseconds = 1500;  // Reduced from 2000ms
+	int PulseStrobe::kNumberPrimingPulses = 8;              // Reduced from 12
+	int PulseStrobe::kPrimingPulseFPS = 20;                 // Increased from 15 for faster priming
 	long PulseStrobe::kPauseBeforeReadyForTriggerMicroSeconds = 100;
-	int PulseStrobe::kPauseToSetUpInnoMakerExternalTriggerMilliseconds = 1000;
+	int PulseStrobe::kPauseToSetUpInnoMakerExternalTriggerMilliseconds = 500;  // Reduced from 1000ms
 	int PulseStrobe::kPauseBeforeReadyForFinalPrimingPulseMs = 100;
 
 
@@ -522,12 +523,27 @@ namespace golf_sim {
 			return false;
 		}
 
+		// Load strobing timing constants from configuration (JSON/YAML)
 		GolfSimConfiguration::SetConstant("gs_config.strobing.kCam2SetupPeriodMilliseconds", kCam2SetupPeriodMilliseconds);
 		GolfSimConfiguration::SetConstant("gs_config.strobing.kNumberPrimingPulses", kNumberPrimingPulses);
 		GolfSimConfiguration::SetConstant("gs_config.strobing.kPrimingPulseFPS", kPrimingPulseFPS);
 		GolfSimConfiguration::SetConstant("gs_config.strobing.kPauseBeforeReadyForTriggerMicroSeconds", kPauseBeforeReadyForTriggerMicroSeconds);
 		GolfSimConfiguration::SetConstant("gs_config.strobing.kPauseToSetUpInnoMakerExternalTriggerMilliseconds", kPauseToSetUpInnoMakerExternalTriggerMilliseconds);
 		GolfSimConfiguration::SetConstant("gs_config.strobing.kPauseBeforeReadyForFinalPrimingPulseMs", kPauseBeforeReadyForFinalPrimingPulseMs);
+		
+		// Override with command line options if specified (following existing pattern)
+		if (GolfSimOptions::GetCommandLineOptions().camera2_setup_ms_ >= 0) {
+			kCam2SetupPeriodMilliseconds = GolfSimOptions::GetCommandLineOptions().camera2_setup_ms_;
+			GS_LOG_MSG(info, "CLI override: camera2 setup time = " + std::to_string(kCam2SetupPeriodMilliseconds) + "ms");
+		}
+		if (GolfSimOptions::GetCommandLineOptions().priming_pulses_ >= 0) {
+			kNumberPrimingPulses = GolfSimOptions::GetCommandLineOptions().priming_pulses_;
+			GS_LOG_MSG(info, "CLI override: priming pulses = " + std::to_string(kNumberPrimingPulses));
+		}
+		if (GolfSimOptions::GetCommandLineOptions().priming_fps_ >= 0) {
+			kPrimingPulseFPS = GolfSimOptions::GetCommandLineOptions().priming_fps_;
+			GS_LOG_MSG(info, "CLI override: priming FPS = " + std::to_string(kPrimingPulseFPS));
+		}
 		
 
 		gpio_system_initialized_ = true;

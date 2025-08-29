@@ -49,6 +49,28 @@ simulators:
   # gspro_port: 921               # Maps to gs_config.golf_simulator_interfaces.GSPro.kGSProConnectPort
 
 # ============================================================================
+# FSM TIMING SETTINGS (Ball Stabilization Optimization)
+# These settings control how quickly the green bar appears after ball placement
+# ============================================================================
+
+fsm_timing:
+  # ball_poll_ms: 100          # How often to check for ball (default: 100ms, was 500ms)
+  # ball_stabilization_time: 1  # Seconds to wait for ball to stop moving (default: 1)
+  # ball_movement_tolerance: 15 # Pixel tolerance for ball movement (default: 15, was 10)
+  # ball_radius_tolerance: 10   # Percent tolerance for ball size change (default: 10, was 6)
+  # parallel_camera_setup: true  # Start camera2 setup immediately when ball detected (default: true)
+
+# ============================================================================
+# STROBING TIMING SETTINGS
+# Controls camera priming and synchronization timing
+# ============================================================================
+
+strobing:
+  # camera2_setup_ms: 1500      # Time to wait for camera2 setup (default: 1500ms, was 2000ms)
+  # priming_pulses: 8           # Number of priming pulses (default: 8, was 12)
+  # priming_fps: 20             # Frame rate for priming pulses (default: 20, was 15)
+
+# ============================================================================
 # BALL DETECTION SETTINGS
 # Override image processing parameters
 # ============================================================================

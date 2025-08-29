@@ -47,9 +47,13 @@ namespace golf_sim {
 
     static long kMaxCam2ImageReceivedTimeMs = 4000;
 
-    const int kWaitForBallPauseMs = 500;
+    // Optimized timing constants - now configurable via JSON or CLI
+    int kWaitForBallPauseMs = 100;  // Reduced from 500ms for faster polling
     const int kEventLoopPauseMs = 5000;
-    const int kBallStabilizationTime = 1; // seconds
+    int kBallStabilizationTime = 1; // seconds
+    int kBallMovementPixelTolerance = 15;  // Increased from 10 to reduce false restarts
+    int kBallRadiusChangeTolerance = 10;   // Increased from 6 to reduce false restarts
+    bool kParallelCameraSetup = true;      // Enable parallel camera initialization
 
     // This is where the strobed-ball image will be put so that the web interface can display it
     std::string kWebServerCamera2Image;
@@ -195,6 +199,14 @@ namespace golf_sim {
             }
 
             std::chrono::steady_clock::time_point lastBallAcquisitionTime = std::chrono::steady_clock::now();
+            std::chrono::steady_clock::time_point camera_setup_start_time = std::chrono::steady_clock::now();
+
+            // OPTIMIZATION: Start camera2 setup immediately in parallel with stabilization if enabled
+            if (kParallelCameraSetup) {
+                GS_LOG_MSG(info, "Ball detected - starting camera2 setup in parallel with stabilization check");
+                GolfSimIPCMessage ipc_message(GolfSimIPCMessage::IPCMessageType::kRequestForCamera2Image);
+                GolfSimIpcSystem::SendIpcMessage(ipc_message);
+            }
 
             // Schedule the timer for a determined (short) time in the future.  When the timer goes off, an
             // CheckForBallStable event will be injected
@@ -204,7 +216,7 @@ namespace golf_sim {
             // Let the monitor interface know what's happening
             GsUISystem::SendIPCStatusMessage(GsIPCResultType::kPausingForBallStabilization);
 
-            return state::WaitingForBallStabilization{ lastBallAcquisitionTime, std::chrono::steady_clock::now(), ball, img };
+            return state::WaitingForBallStabilization{ lastBallAcquisitionTime, std::chrono::steady_clock::now(), ball, img, camera_setup_start_time };
         }
 
 
@@ -260,7 +272,10 @@ namespace golf_sim {
 
         // If the ball hasn't been found, then whether the ball moved is moot
         if (found) {
-            ballMoved = ball.CheckIfBallMoved(waitingForBallStabilization.cam1_ball_, 10 /* max center move pixels */, 6 /* % radius change */);
+            // Use configurable tolerances to reduce false movement detections
+            ballMoved = ball.CheckIfBallMoved(waitingForBallStabilization.cam1_ball_, 
+                                             kBallMovementPixelTolerance, 
+                                             kBallRadiusChangeTolerance);
         }
         else {
             GS_LOG_MSG(info, "=============== Ball Lost Before Stabilizing - Will look for ball again.");
@@ -285,9 +300,13 @@ namespace golf_sim {
         // Whatever happens, this is a new shot with a new shot number
         GsSimInterface::IncrementShotCounter();
 
-        // Let the second camera know to be ready for a ball hit
-        GolfSimIPCMessage ipc_message(GolfSimIPCMessage::IPCMessageType::kRequestForCamera2Image);
-        GolfSimIpcSystem::SendIpcMessage(ipc_message);
+        // Let the second camera know to be ready for a ball hit (unless already sent in parallel mode)
+        if (!kParallelCameraSetup) {
+            GolfSimIPCMessage ipc_message(GolfSimIPCMessage::IPCMessageType::kRequestForCamera2Image);
+            GolfSimIpcSystem::SendIpcMessage(ipc_message);
+        } else {
+            GS_LOG_MSG(debug, "Camera2 setup was already initiated in parallel mode - skipping duplicate IPC message");
+        }
 
         // The sending of the priming pulses will include a trigger to make the camera2
         // take a pre-image.  That will in turn send an event to the camera1 system that 
@@ -748,7 +767,35 @@ namespace golf_sim {
         GolfSimConfiguration::SetConstant("gs_config.ipc_interface.kMaxCam2ImageReceivedTimeMs", kMaxCam2ImageReceivedTimeMs);
 
         GolfSimConfiguration::SetConstant("gs_config.user_interface.kWebServerCamera2Image", kWebServerCamera2Image);
-        GolfSimConfiguration::SetConstant("gs_config.user_interface.kWebServerLastTeedBallImage", kWebServerLastTeedBallImage);        
+        GolfSimConfiguration::SetConstant("gs_config.user_interface.kWebServerLastTeedBallImage", kWebServerLastTeedBallImage);
+        
+        // Load optimized timing constants from configuration (JSON/YAML)
+        GolfSimConfiguration::SetConstant("gs_config.fsm_timing.kWaitForBallPauseMs", kWaitForBallPauseMs);
+        GolfSimConfiguration::SetConstant("gs_config.fsm_timing.kBallStabilizationTimeSeconds", kBallStabilizationTime);
+        GolfSimConfiguration::SetConstant("gs_config.fsm_timing.kBallMovementPixelTolerance", kBallMovementPixelTolerance);
+        GolfSimConfiguration::SetConstant("gs_config.fsm_timing.kBallRadiusChangeTolerance", kBallRadiusChangeTolerance);
+        GolfSimConfiguration::SetConstant("gs_config.fsm_timing.kParallelCameraSetup", kParallelCameraSetup);
+        
+        // Override with command line options if specified (following existing pattern like E6 interface)
+        if (GolfSimOptions::GetCommandLineOptions().ball_poll_ms_ >= 0) {
+            kWaitForBallPauseMs = GolfSimOptions::GetCommandLineOptions().ball_poll_ms_;
+            GS_LOG_MSG(info, "CLI override: ball poll interval = " + std::to_string(kWaitForBallPauseMs) + "ms");
+        }
+        if (GolfSimOptions::GetCommandLineOptions().ball_stabilization_time_ >= 0) {
+            kBallStabilizationTime = GolfSimOptions::GetCommandLineOptions().ball_stabilization_time_;
+            GS_LOG_MSG(info, "CLI override: ball stabilization time = " + std::to_string(kBallStabilizationTime) + "s");
+        }
+        if (GolfSimOptions::GetCommandLineOptions().ball_movement_tolerance_ >= 0) {
+            kBallMovementPixelTolerance = GolfSimOptions::GetCommandLineOptions().ball_movement_tolerance_;
+            GS_LOG_MSG(info, "CLI override: ball movement tolerance = " + std::to_string(kBallMovementPixelTolerance) + " pixels");
+        }
+        // Always use command line value for parallel_camera_setup since it has a default
+        kParallelCameraSetup = GolfSimOptions::GetCommandLineOptions().parallel_camera_setup_;
+        
+        GS_LOG_MSG(info, "FSM Timing Configuration: Poll=" + std::to_string(kWaitForBallPauseMs) + 
+                        "ms, Stabilization=" + std::to_string(kBallStabilizationTime) + 
+                        "s, MoveTolerance=" + std::to_string(kBallMovementPixelTolerance) +
+                        "px, ParallelCamera=" + (kParallelCameraSetup ? "true" : "false"));        
         
         GolfSimStateMachine golfSim;
 

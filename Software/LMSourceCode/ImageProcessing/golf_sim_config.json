@@ -174,7 +174,20 @@
         "physical_constants": {
             "kBallRadiusMeters": "0.021335"
         },
+        "fsm_timing": {
+            "kWaitForBallPauseMs": "100",
+            "kBallStabilizationTimeSeconds": "1",
+            "kBallMovementPixelTolerance": "15",
+            "kBallRadiusChangeTolerance": "10",
+            "kParallelCameraSetup": "1",
+            "COMMENT": "Optimized timing for faster ball detection and green bar display"
+        },
         "strobing": {
+            "kCam2SetupPeriodMilliseconds": "1500",
+            "kNumberPrimingPulses": "8",
+            "kPrimingPulseFPS": "20",
+            "kPauseBeforeReadyForFinalPrimingPulseMs": "100",
+            "kPauseToSetUpInnoMakerExternalTriggerMilliseconds": "500",
             "number_bits_for_fast_on_pulse_": "1",
             "number_bits_for_slow_on_pulse_": "8",
             "kBaudRateForFastPulses": "115200",

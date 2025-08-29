@@ -124,6 +124,20 @@ namespace golf_sim {
 					"Specify the name or IP address of the host PC that is running the GSPro simulator.  Default is: <empty string>, indicating no GSPro sim is connected.")
 				("config_file", value<std::string>(&config_file_)->default_value("golf_sim_config.json"),
 					"Specify the filename with the JSON configuration.  Default is: golf_sim_config.json")
+				("ball_poll_ms", value<int>(&ball_poll_ms_)->default_value(-1),
+					"Override ball detection polling interval in milliseconds (default: from config file)")
+				("ball_stabilization_time", value<int>(&ball_stabilization_time_)->default_value(-1),
+					"Override ball stabilization time in seconds (default: from config file)")
+				("parallel_camera_setup", value<bool>(&parallel_camera_setup_)->default_value(true)->implicit_value(true),
+					"Enable parallel camera initialization for faster green bar (default: true)")
+				("ball_movement_tolerance", value<int>(&ball_movement_tolerance_)->default_value(-1),
+					"Override ball movement pixel tolerance (default: from config file)")
+				("camera2_setup_ms", value<int>(&camera2_setup_ms_)->default_value(-1),
+					"Override camera2 setup time in milliseconds (default: from config file)")
+				("priming_pulses", value<int>(&priming_pulses_)->default_value(-1),
+					"Override number of priming pulses (default: from config file)")
+				("priming_fps", value<int>(&priming_fps_)->default_value(-1),
+					"Override priming pulse frame rate (default: from config file)")
 				("cmd_file,cmd", value<std::string>(&command_line_file_)->implicit_value("config.txt"),
 					"Read the options from a file. If no filename is specified, default to config.txt. "
 					"In case of duplicate options, the ones provided on the command line will be used. "
@@ -172,6 +186,17 @@ namespace golf_sim {
 		unsigned int search_center_x_ = 0;
 		unsigned int search_center_y_ = 0;
 		double camera_gain_ = 0.0;   // 1.0 might seem more appropriate, but we want to be able to see if this is set or not
+		
+		// Timing optimization parameters
+		int ball_poll_ms_ = -1;              // -1 means use config file value
+		int ball_stabilization_time_ = -1;   // -1 means use config file value
+		bool parallel_camera_setup_ = true;  // Default to enabled for speed
+		int ball_movement_tolerance_ = -1;   // -1 means use config file value
+		
+		// Strobing timing parameters
+		int camera2_setup_ms_ = -1;          // -1 means use config file value
+		int priming_pulses_ = -1;            // -1 means use config file value
+		int priming_fps_ = -1;               // -1 means use config file value
 
 		virtual bool Parse(int argc, char* argv[]);
 		virtual void Print() const;

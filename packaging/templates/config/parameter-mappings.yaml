@@ -86,6 +86,76 @@ mappings:
       max: 65535
   
   # ============================================================================
+  # FSM TIMING MAPPINGS (Ball Stabilization Optimization)
+  # ============================================================================
+  
+  fsm_timing.ball_poll_ms:
+    json_path: gs_config.fsm_timing.kWaitForBallPauseMs
+    cli_flag: --ball-poll-ms
+    type: integer
+    validation:
+      min: 50
+      max: 1000
+  
+  fsm_timing.ball_stabilization_time:
+    json_path: gs_config.fsm_timing.kBallStabilizationTimeSeconds
+    cli_flag: --ball-stabilization-time
+    type: integer
+    validation:
+      min: 1
+      max: 5
+  
+  fsm_timing.ball_movement_tolerance:
+    json_path: gs_config.fsm_timing.kBallMovementPixelTolerance
+    cli_flag: --ball-movement-tolerance
+    type: integer
+    validation:
+      min: 5
+      max: 50
+  
+  fsm_timing.ball_radius_tolerance:
+    json_path: gs_config.fsm_timing.kBallRadiusChangeTolerance
+    cli_flag: --ball-radius-tolerance
+    type: integer
+    validation:
+      min: 5
+      max: 20
+  
+  fsm_timing.parallel_camera_setup:
+    json_path: gs_config.fsm_timing.kParallelCameraSetup
+    cli_flag: --parallel-camera-setup
+    type: boolean
+    to_json: |
+      value ? "1" : "0"
+    from_json: |
+      value == "1"
+  
+  # ============================================================================
+  # STROBING TIMING MAPPINGS
+  # ============================================================================
+  
+  strobing.camera2_setup_ms:
+    json_path: gs_config.strobing.kCam2SetupPeriodMilliseconds
+    type: integer
+    validation:
+      min: 500
+      max: 5000
+  
+  strobing.priming_pulses:
+    json_path: gs_config.strobing.kNumberPrimingPulses
+    type: integer
+    validation:
+      min: 4
+      max: 20
+  
+  strobing.priming_fps:
+    json_path: gs_config.strobing.kPrimingPulseFPS
+    type: integer
+    validation:
+      min: 10
+      max: 60
+  
+  # ============================================================================
   # BALL DETECTION MAPPINGS
   # ============================================================================
   
