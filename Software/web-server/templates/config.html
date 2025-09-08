@@ -4,392 +4,159 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PiTrac Configuration</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .header {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .header h1 {
-            color: #333;
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-
-        .header .actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #5a67d8;
-        }
-
-        .btn-secondary {
-            background: #e2e8f0;
-            color: #4a5568;
-        }
-
-        .btn-secondary:hover {
-            background: #cbd5e0;
-        }
-
-        .btn-danger {
-            background: #f56565;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #e53e3e;
-        }
-
-        .main-content {
-            display: grid;
-            grid-template-columns: 250px 1fr;
-            gap: 20px;
-        }
-
-        .sidebar {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            height: fit-content;
-            position: sticky;
-            top: 20px;
-        }
-
-        .sidebar h2 {
-            font-size: 16px;
-            color: #4a5568;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .category-list {
-            list-style: none;
-        }
-
-        .category-item {
-            padding: 10px;
-            margin-bottom: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .category-item:hover {
-            background: #f7fafc;
-        }
-
-        .category-item.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .config-panel {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .search-box {
-            margin-bottom: 20px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #e2e8f0;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .config-group {
-            margin-bottom: 30px;
-        }
-
-        .config-group h3 {
-            font-size: 18px;
-            color: #2d3748;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-
-        .config-item {
-            display: grid;
-            grid-template-columns: 1fr 300px 100px;
-            gap: 15px;
-            align-items: center;
-            padding: 15px;
-            margin-bottom: 10px;
-            background: #f7fafc;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-
-        .config-item:hover {
-            background: #edf2f7;
-        }
-
-        .config-item.modified {
-            background: #fef5e7;
-            border-left: 3px solid #f39c12;
-        }
-
-        .config-label {
-            font-size: 14px;
-            color: #4a5568;
-        }
-
-        .config-label .key {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            color: #718096;
-            display: block;
-            margin-top: 5px;
-        }
-
-        .config-input {
-            padding: 8px;
-            border: 1px solid #cbd5e0;
-            border-radius: 5px;
-            font-size: 14px;
-            width: 100%;
-        }
-
-        .config-input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .config-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        .btn-small {
-            padding: 5px 10px;
-            font-size: 12px;
-        }
-
-        .status-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid #e2e8f0;
-            padding: 10px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .status-message {
-            font-size: 14px;
-            color: #4a5568;
-        }
-
-        .status-message.success {
-            color: #48bb78;
-        }
-
-        .status-message.error {
-            color: #f56565;
-        }
-
-        .status-message.warning {
-            color: #f39c12;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            max-width: 500px;
-            width: 90%;
-        }
-
-        .modal-header {
-            margin-bottom: 20px;
-        }
-
-        .modal-header h2 {
-            color: #2d3748;
-            font-size: 20px;
-        }
-
-        .modal-body {
-            margin-bottom: 20px;
-            color: #4a5568;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-        }
-
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-
-            .sidebar {
-                position: static;
-            }
-
-            .config-item {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-        }
-    </style>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="stylesheet" href="/static/dashboard.css">
+    <link rel="stylesheet" href="/static/config.css">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 PiTrac Configuration Manager</h1>
-            <div class="actions">
-                <button class="btn btn-primary" onclick="saveChanges()">
-                    Save Changes
+            <div class="header-content">
+                <a href="/" style="display: flex; align-items: center; text-decoration: none; color: inherit;">
+                    <img src="/static/logos/PiTrac.svg" alt="PiTrac Logo" class="header-logo">
+                    <h1>Configuration</h1>
+                </a>
+            </div>
+            <div class="header-right">
+                <div class="dropdown">
+                    <button class="dropdown-toggle" aria-label="Menu">
+                        <svg fill="currentColor" viewBox="0 0 20 20" width="24" height="24">
+                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                        </svg>
+                    </button>
+                    <div class="dropdown-menu">
+                        <a href="/" class="dropdown-item">
+                            <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
+                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
+                            </svg>
+                            Dashboard
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <div class="theme-selector">
+                            <span class="dropdown-label">Theme</span>
+                            <div class="theme-options">
+                                <button class="theme-btn" data-theme="light" title="Light mode" onclick="setTheme('light')">
+                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                <button class="theme-btn" data-theme="dark" title="Dark mode" onclick="setTheme('dark')">
+                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                                    </svg>
+                                </button>
+                                <button class="theme-btn" data-theme="system" title="System theme" onclick="setTheme('system')">
+                                    <svg fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div id="status-message"></div>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="saveAllChanges()">
+                    Save All Changes
                 </button>
                 <button class="btn btn-secondary" onclick="reloadConfig()">
                     Reload
                 </button>
-                <button class="btn btn-secondary" onclick="showDiff()">
-                    View Changes
-                </button>
-                <button class="btn btn-secondary" onclick="exportConfig()">
-                    Export
-                </button>
-                <button class="btn btn-secondary" onclick="importConfig()">
-                    Import
-                </button>
-                <button class="btn btn-danger" onclick="resetAll()">
+                <button class="btn btn-danger" onclick="resetToDefaults()">
                     Reset to Defaults
                 </button>
-                <a href="/" class="btn btn-secondary" style="text-decoration: none;">
-                    Back to Dashboard
-                </a>
             </div>
         </div>
 
-        <div class="main-content">
-            <div class="sidebar">
-                <h2>Categories</h2>
-                <ul class="category-list" id="categoryList">
-                    <li class="category-item active" data-category="all">All Settings</li>
-                </ul>
-            </div>
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search settings..." class="search-input">
+            <button onclick="clearSearch()" class="clear-search">Clear</button>
+        </div>
 
-            <div class="config-panel">
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="Search configuration..." onkeyup="filterConfig()">
-                </div>
-                <div id="configContent">
-                    <div class="loading"></div> Loading configuration...
-                </div>
-            </div>
+        <!-- Configuration Sections -->
+        <div id="config-sections" class="config-sections">
+            <!-- Sections will be dynamically loaded here -->
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Loading configuration...</p>
         </div>
     </div>
 
-    <div class="status-bar">
-        <div class="status-message" id="statusMessage">Ready</div>
-        <div>
-            <span id="modifiedCount">0</span> modified settings
-        </div>
-    </div>
+    <!-- Theme Script (same as dashboard) -->
+    <script>
+        // Theme management
+        function getSystemTheme() {
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
 
-    <div class="modal" id="confirmModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">Confirm Action</h2>
-            </div>
-            <div class="modal-body" id="modalBody">
-                Are you sure you want to proceed?
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                <button class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
-            </div>
-        </div>
-    </div>
+        function applyTheme(theme) {
+            if (theme === 'system') {
+                theme = getSystemTheme();
+            }
+            document.documentElement.setAttribute('data-theme', theme);
+            
+            // Update active button
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const activeBtn = document.querySelector(`.theme-btn[data-theme="${localStorage.getItem('theme') || 'system'}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
+        }
 
+        function setTheme(theme) {
+            localStorage.setItem('theme', theme);
+            applyTheme(theme);
+        }
+
+        // Initialize theme
+        const savedTheme = localStorage.getItem('theme') || 'system';
+        applyTheme(savedTheme);
+
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+            if (localStorage.getItem('theme') === 'system') {
+                applyTheme('system');
+            }
+        });
+
+        // Dropdown menu toggle
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropdown = document.querySelector('.dropdown');
+            const toggle = document.querySelector('.dropdown-toggle');
+            
+            toggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdown.classList.toggle('active');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', () => {
+                dropdown.classList.remove('active');
+            });
+            
+            // Prevent dropdown from closing when clicking inside
+            document.querySelector('.dropdown-menu').addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        });
+    </script>
+
+    <!-- Configuration Scripts -->
     <script src="/static/js/config.js"></script>
 </body>
 </html>

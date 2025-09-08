@@ -34,6 +34,34 @@ function initTheme() {
     const savedTheme = localStorage.getItem('pitrac-theme') || 'system';
     currentTheme = savedTheme;
     applyTheme(savedTheme);
+    
+    // Initialize dropdown menu
+    initDropdown();
+}
+
+function initDropdown() {
+    const dropdown = document.querySelector('.dropdown');
+    const toggle = document.querySelector('.dropdown-toggle');
+    
+    if (toggle && dropdown) {
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('active');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            dropdown.classList.remove('active');
+        });
+        
+        // Prevent dropdown from closing when clicking inside
+        const dropdownMenu = document.querySelector('.dropdown-menu');
+        if (dropdownMenu) {
+            dropdownMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        }
+    }
 }
 
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
