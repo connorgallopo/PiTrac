@@ -208,8 +208,10 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSystemStatus();
 
     setInterval(checkSystemStatus, 5000);
+    
+    checkPiTracStatus();
+    setInterval(checkPiTracStatus, 5000);
 
-    // Initialize with default status since result_type and message elements are commented out
     updateBallStatus('Initializing', 'System starting up...');
 
     document.addEventListener('visibilitychange', () => {
@@ -218,3 +220,98 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+async function controlPiTrac(action) {
+    const button = document.getElementById(`pitrac-${action}-btn`);
+    if (button) {
+        button.disabled = true;
+        button.classList.add('loading');
+    }
+
+    try {
+        const response = await fetch(`/api/pitrac/${action}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+
+        showStatusMessage(result.message || `PiTrac ${action} completed`, result.status === 'error' ? 'error' : 'success');
+
+        setTimeout(() => {
+            checkPiTracStatus();
+        }, 1000);
+
+    } catch (error) {
+        console.error(`Failed to ${action} PiTrac:`, error);
+        showStatusMessage(`Failed to ${action} PiTrac: ${error.message}`, 'error');
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.classList.remove('loading');
+        }
+    }
+}
+
+async function checkPiTracStatus() {
+    try {
+        const response = await fetch('/api/pitrac/status');
+        const status = await response.json();
+
+        updatePiTracButtons(status.running);
+
+        const statusDot = document.getElementById('pitrac-status-dot');
+        if (statusDot) {
+            if (status.running) {
+                statusDot.classList.add('connected');
+                statusDot.classList.remove('disconnected');
+                statusDot.title = `PiTrac Running (PID: ${status.pid})`;
+            } else {
+                statusDot.classList.remove('connected');
+                statusDot.classList.add('disconnected');
+                statusDot.title = 'PiTrac Stopped';
+            }
+        }
+    } catch (error) {
+        console.error('Failed to check PiTrac status:', error);
+    }
+}
+
+function updatePiTracButtons(isRunning) {
+    const startBtn = document.getElementById('pitrac-start-btn');
+    const stopBtn = document.getElementById('pitrac-stop-btn');
+    const restartBtn = document.getElementById('pitrac-restart-btn');
+
+    if (startBtn) {
+        startBtn.disabled = isRunning;
+        startBtn.style.display = isRunning ? 'none' : 'inline-flex';
+    }
+
+    if (stopBtn) {
+        stopBtn.disabled = !isRunning;
+        stopBtn.style.display = isRunning ? 'inline-flex' : 'none';
+    }
+
+    if (restartBtn) {
+        restartBtn.disabled = !isRunning;
+        restartBtn.style.display = isRunning ? 'inline-flex' : 'none';
+    }
+}
+
+function showStatusMessage(message, type = 'info') {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+
+    const statusMessage = document.getElementById('ball-status-message');
+    if (statusMessage) {
+        const originalMessage = statusMessage.textContent;
+        statusMessage.textContent = message;
+        statusMessage.className = `ball-status-message ${type}`;
+
+        setTimeout(() => {
+            statusMessage.textContent = originalMessage;
+            statusMessage.className = 'ball-status-message';
+        }, 3000);
+    }
+}

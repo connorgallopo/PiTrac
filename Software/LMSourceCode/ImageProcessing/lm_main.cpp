@@ -13,6 +13,8 @@
 #include <iostream>
 #include <cstring>
 #include <filesystem>
+#include <signal.h>
+#include <atomic>
 
 #include "gs_globals.h"
 #include "golf_ball.h"
@@ -900,6 +902,52 @@ void test_gspro_communication() {
     GS_LOG_MSG(debug, json);
 }
 
+static std::atomic<bool> g_shutdown_requested(false);
+
+void signal_handler(int sig) {
+    GS_LOG_MSG(info, "Received signal " + std::to_string(sig) + ", initiating clean shutdown...");
+    g_shutdown_requested = true;
+    
+    try {
+        GS_LOG_MSG(info, "Cleaning up GPIO system...");
+        PulseStrobe::DeinitGPIOSystem();
+        GS_LOG_MSG(info, "GPIO system deinitialized successfully");
+    } catch (const std::exception& e) {
+        GS_LOG_MSG(error, "Error during GPIO cleanup: " + std::string(e.what()));
+    } catch (...) {
+        GS_LOG_MSG(error, "Unknown error during GPIO cleanup");
+    }
+    
+    try {
+        GS_LOG_MSG(info, "Shutting down IPC system...");
+        GolfSimIpcSystem::ShutdownIPCSystem();
+        GS_LOG_MSG(info, "IPC system shutdown successfully");
+    } catch (const std::exception& e) {
+        GS_LOG_MSG(error, "Error during IPC cleanup: " + std::string(e.what()));
+    } catch (...) {
+        GS_LOG_MSG(error, "Unknown error during IPC cleanup");
+    }
+    
+    GS_LOG_MSG(info, "PiTrac shutdown complete");
+    exit(0);
+}
+
+void setup_signal_handlers() {
+#ifdef __unix__
+    struct sigaction sa;
+    sa.sa_handler = signal_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    
+    sigaction(SIGTERM, &sa, nullptr);
+    sigaction(SIGINT, &sa, nullptr);
+    sigaction(SIGHUP, &sa, nullptr);
+    sigaction(SIGQUIT, &sa, nullptr);
+    
+    GS_LOG_MSG(info, "Signal handlers installed for clean shutdown");
+#endif
+}
+
 // In Linux, this function will start running the actual LM code.
 // In Windows, this function will run whatever tests are currently
 // commented in to run.
@@ -1488,6 +1536,8 @@ void run_main(int argc, char* argv[])
 int main(int argc, char *argv[])
 {
     try {
+        golf_sim::setup_signal_handlers();
+        
         if (!GolfSimOptions::GetCommandLineOptions().Parse(argc, argv))
         {
             GS_LOG_MSG(error, "Could not GetCommandLineOptions.  Exiting.");
@@ -1542,11 +1592,40 @@ int main(int argc, char *argv[])
         GolfSimGlobals::golf_sim_running_ = true;
 
         run_main(argc, argv);
+        
+        GS_LOG_MSG(info, "PiTrac Launch Monitor shutting down normally...");
+        
+        try {
+            golf_sim::PulseStrobe::DeinitGPIOSystem();
+            GS_LOG_MSG(info, "GPIO system cleaned up successfully");
+        } catch (const std::exception& e) {
+            GS_LOG_MSG(error, "Error during GPIO cleanup: " + std::string(e.what()));
+        }
+        
+        try {
+            golf_sim::GolfSimIpcSystem::ShutdownIPCSystem();
+            GS_LOG_MSG(info, "IPC system cleaned up successfully");
+        } catch (const std::exception& e) {
+            GS_LOG_MSG(error, "Error during IPC cleanup: " + std::string(e.what()));
+        }
     }
     catch (std::exception const& e)
     {
         GS_LOG_MSG(error, "Exception occurred. ERROR: *** " + std::string(e.what()) + " ***");
-        return false;
+        
+        try {
+            golf_sim::PulseStrobe::DeinitGPIOSystem();
+        } catch (...) {
+            GS_LOG_MSG(error, "Failed to cleanup GPIO on exception");
+        }
+        
+        try {
+            golf_sim::GolfSimIpcSystem::ShutdownIPCSystem();
+        } catch (...) {
+            GS_LOG_MSG(error, "Failed to cleanup IPC on exception");
+        }
+        
+        return -1;
     }
 
     GS_LOG_TRACE_MSG(trace, "Finished run_main.");
@@ -1555,4 +1634,5 @@ int main(int argc, char *argv[])
     // cv::waitKey(0);
 
     GS_LOG_TRACE_MSG(trace, "Tests Complete");
+    return 0;
 }
