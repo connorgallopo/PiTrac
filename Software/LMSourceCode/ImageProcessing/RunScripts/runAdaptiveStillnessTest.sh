@@ -93,10 +93,11 @@ cd "$BUILD_DIR"
 if [ ! -f "test_adaptive_stillness" ] || [ "$BASE_DIR/test_adaptive_stillness.cpp" -nt "test_adaptive_stillness" ]; then
     echo "Building test executable..."
     
-    # Compile test program
+    # Compile test program with correct OpenCV paths
     g++ -std=c++17 \
         -I"$BASE_DIR" \
-        -I/usr/include/opencv4 \
+        -I/opt/opencv/include/opencv4 \
+        -I/usr/include \
         -I/usr/local/include \
         -O2 -g \
         "$BASE_DIR/test_adaptive_stillness.cpp" \
@@ -107,9 +108,11 @@ if [ ! -f "test_adaptive_stillness" ] || [ "$BASE_DIR/test_adaptive_stillness.cp
         "$BASE_DIR/gs_automated_testing.cpp" \
         "$BASE_DIR/ball_image_proc.cpp" \
         -o test_adaptive_stillness \
+        -L/opt/opencv/lib \
         -lopencv_core -lopencv_imgproc -lopencv_imgcodecs -lopencv_highgui \
-        -lboost_system -lboost_filesystem -lboost_timer \
-        -lpthread
+        -lboost_system -lboost_filesystem -lboost_timer -lboost_program_options \
+        -lpthread \
+        -Wl,-rpath,/opt/opencv/lib
     
     if [ $? -ne 0 ]; then
         echo "Build failed!"
