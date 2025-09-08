@@ -196,6 +196,11 @@ async function checkSystemStatus() {
             } else {
                 pitracDot.classList.add('disconnected');
             }
+            
+\            const camera2Dot = document.getElementById('pitrac-camera2-status-dot');
+            if (camera2Dot && !data.pitrac_running) {
+                camera2Dot.classList.add('disconnected');
+            }
         }
     } catch (error) {
         console.error('Error checking system status:', error);
@@ -262,16 +267,45 @@ async function checkPiTracStatus() {
 
         updatePiTracButtons(status.running);
 
+        // Camera 1 status
         const statusDot = document.getElementById('pitrac-status-dot');
         if (statusDot) {
-            if (status.running) {
+            if (status.camera1_pid) {
                 statusDot.classList.add('connected');
                 statusDot.classList.remove('disconnected');
-                statusDot.title = `PiTrac Running (PID: ${status.pid})`;
+                statusDot.title = `PiTrac Camera 1 Running (PID: ${status.camera1_pid})`;
             } else {
                 statusDot.classList.remove('connected');
                 statusDot.classList.add('disconnected');
-                statusDot.title = 'PiTrac Stopped';
+                statusDot.title = 'PiTrac Camera 1 Stopped';
+            }
+        }
+
+        // Camera 2 status (only shown in single-Pi mode)
+        const camera2Container = document.getElementById('camera2-status-container');
+        const camera2Dot = document.getElementById('pitrac-camera2-status-dot');
+        
+        if (status.mode === 'single') {
+            // Show camera2 indicator in single-Pi mode
+            if (camera2Container) {
+                camera2Container.style.display = 'flex';
+            }
+            
+            if (camera2Dot) {
+                if (status.camera2_pid) {
+                    camera2Dot.classList.add('connected');
+                    camera2Dot.classList.remove('disconnected');
+                    camera2Dot.title = `PiTrac Camera 2 Running (PID: ${status.camera2_pid})`;
+                } else {
+                    camera2Dot.classList.remove('connected');
+                    camera2Dot.classList.add('disconnected');
+                    camera2Dot.title = 'PiTrac Camera 2 Stopped';
+                }
+            }
+        } else {
+            // Hide camera2 indicator in dual-Pi mode
+            if (camera2Container) {
+                camera2Container.style.display = 'none';
             }
         }
     } catch (error) {
