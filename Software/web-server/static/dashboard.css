@@ -212,6 +212,31 @@ body {
     margin-top: 0.5rem;
 }
 
+.theme-options .theme-btn {
+    flex: 1;
+    padding: 0.5rem;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: auto;
+    height: auto;
+}
+
+.theme-options .theme-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    transform: none;
+}
+
+.theme-options .theme-btn.active {
+    background: var(--accent-gradient);
+    color: white;
+    border-color: transparent;
+}
+
 /* Theme Toggle */
 .theme-toggle {
     display: flex;
