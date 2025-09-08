@@ -59,12 +59,7 @@ class PiTracProcessManager:
 
         logging_config = config.get("logging") or {}
         log_level = logging_config.get("level", "info")
-        if log_level == "trace":
-            cmd.append("--trace")
-        elif log_level == "debug":
-            cmd.append("--debug")
-        elif log_level == "info":
-            cmd.append("--info")
+        cmd.append(f"--logging_level={log_level}")
 
         network_config = config.get("network") or {}
         msg_broker = network_config.get("broker_address")
@@ -76,11 +71,16 @@ class PiTracProcessManager:
         base_image_dir = storage_config.get("image_dir")
         if not base_image_dir:
             base_image_dir = str(Path.home() / "LM_Shares" / "Images")
+        if not base_image_dir.endswith("/"):
+            base_image_dir += "/"
         cmd.append(f"--base_image_logging_dir={base_image_dir}")
 
         web_share_dir = storage_config.get("web_share_dir")
         if not web_share_dir:
             web_share_dir = str(Path.home() / "LM_Shares" / "WebShare")
+        # Ensure trailing slash as required by pitrac_lm
+        if not web_share_dir.endswith("/"):
+            web_share_dir += "/"
         cmd.append(f"--web_server_share_dir={web_share_dir}")
 
         simulators_config = config.get("simulators") or {}
@@ -93,7 +93,7 @@ class PiTracProcessManager:
             cmd.append(f"--gspro_host_address={gspro_host}")
 
         if Path(self.config_file).exists():
-            cmd.append(f"--config={self.config_file}")
+            cmd.append(f"--config_file={self.config_file}")
 
         logger.info(f"Built command: {' '.join(cmd)}")
         return cmd
@@ -118,6 +118,9 @@ class PiTracProcessManager:
             # Set environment variables
             env = os.environ.copy()
             env["LD_LIBRARY_PATH"] = "/usr/lib/pitrac"
+            env["PITRAC_ROOT"] = (
+                "/usr/lib/pitrac"  # Set PITRAC_ROOT for libcamera_interface
+            )
             home_dir = str(Path.home())
             env["PITRAC_BASE_IMAGE_LOGGING_DIR"] = f"{home_dir}/LM_Shares/Images/"
             env["PITRAC_WEBSERVER_SHARE_DIR"] = f"{home_dir}/LM_Shares/WebShare/"
@@ -195,7 +198,7 @@ class PiTracProcessManager:
                 logger.info(f"Sent SIGTERM to PiTrac process {pid}")
 
                 max_wait = 5
-                for i in range(max_wait * 10):
+                for _ in range(max_wait * 10):
                     await asyncio.sleep(0.1)
                     if not self.is_running():
                         break
