@@ -197,7 +197,7 @@ async function checkSystemStatus() {
                 pitracDot.classList.add('disconnected');
             }
             
-\            const camera2Dot = document.getElementById('pitrac-camera2-status-dot');
+            const camera2Dot = document.getElementById('pitrac-camera2-status-dot');
             if (camera2Dot && !data.pitrac_running) {
                 camera2Dot.classList.add('disconnected');
             }
