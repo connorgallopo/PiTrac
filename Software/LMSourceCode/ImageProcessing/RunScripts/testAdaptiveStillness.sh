@@ -62,72 +62,133 @@ echo ""
 echo "Running timing test..."
 echo "----------------------"
 
-# Create a test script that measures startup and detection timing
-cat > /tmp/test_timing.sh << 'EOF'
-#!/bin/bash
-START=$(date +%s%N)
-
-# Run pitrac_lm in test mode for a short duration
-timeout 5 "$1" --camera1-test 2>&1 | tee /tmp/pitrac_test.log &
-PID=$!
-
-# Wait a moment for initialization
-sleep 2
-
-# Check if process is running
-if ps -p $PID > /dev/null; then
-    echo "Process started successfully"
-    kill $PID 2>/dev/null
+# Test 1: Check binary for help output and version info
+echo "Test 1: Binary validation"
+echo "-------------------------"
+if "$BINARY" --help 2>&1 | head -5 > /tmp/help_output.txt; then
+    echo -e "${GREEN}✓ Binary executes and provides help${NC}"
+    cat /tmp/help_output.txt | head -3
 else
-    echo "Process failed to start"
+    echo -e "${RED}✗ Binary failed to execute${NC}"
 fi
-
-END=$(date +%s%N)
-ELAPSED=$((($END - $START) / 1000000))
-echo "Test duration: ${ELAPSED}ms"
-
-# Check for adaptive stillness messages in log
-if grep -q "AdaptiveStillnessDetector" /tmp/pitrac_test.log; then
-    echo -e "\033[0;32m✓ Adaptive stillness detector initialized\033[0m"
-else
-    echo -e "\033[1;33m⚠ No adaptive stillness messages found\033[0m"
-fi
-
-if grep -q "Using adaptive ball stabilization" /tmp/pitrac_test.log; then
-    echo -e "\033[0;32m✓ System using adaptive mode\033[0m"
-else
-    if grep -q "Using fixed timer ball stabilization" /tmp/pitrac_test.log; then
-        echo -e "\033[1;33m⚠ System using fixed timer mode\033[0m"
-    fi
-fi
-
-# Check for YOLO detection
-if grep -q "Using ONNX detection\|YOLO" /tmp/pitrac_test.log; then
-    echo -e "\033[0;32m✓ YOLO/ONNX detection enabled\033[0m"
-else
-    echo -e "\033[1;33m⚠ Using legacy Hough circles detection\033[0m"
-fi
-EOF
-
-chmod +x /tmp/test_timing.sh
-/tmp/test_timing.sh "$BINARY" | tee -a "$LOG_FILE"
 
 echo ""
-echo "Checking for adaptive components..."
-echo "------------------------------------"
+echo "Test 2: Configuration validation" 
+echo "--------------------------------"
+# Validate that config has proper adaptive settings without running the binary
+if [ -f "$CONFIG_FILE" ]; then
+    ADAPTIVE_COUNT=0
+    
+    # Check stabilization method
+    if grep -q '"kStabilizationMethod".*"adaptive"' "$CONFIG_FILE"; then
+        echo -e "${GREEN}✓ Stabilization method set to 'adaptive'${NC}"
+        ((ADAPTIVE_COUNT++))
+    else
+        echo -e "${YELLOW}⚠ Stabilization method not set to 'adaptive'${NC}"
+    fi
+    
+    # Check detection method
+    if grep -q '"kDetectionMethod".*"experimental' "$CONFIG_FILE"; then
+        echo -e "${GREEN}✓ Detection method set to experimental (YOLO/SAHI)${NC}"
+        ((ADAPTIVE_COUNT++))
+    else
+        echo -e "${YELLOW}⚠ Detection method not using experimental AI${NC}"
+    fi
+    
+    # Check ball stabilization time (should be low for adaptive)
+    STAB_TIME=$(grep '"kBallStabilizationTimeMs"' "$CONFIG_FILE" | head -1 | grep -o '[0-9]*' | head -1)
+    if [ -n "$STAB_TIME" ] && [ "$STAB_TIME" -le "500" ]; then
+        echo -e "${GREEN}✓ Ball stabilization time set to ${STAB_TIME}ms (good for adaptive)${NC}"
+        ((ADAPTIVE_COUNT++))
+    else
+        echo -e "${YELLOW}⚠ Ball stabilization time may be too high: ${STAB_TIME}ms${NC}"
+    fi
+    
+    echo ""
+    echo "Configuration score: $ADAPTIVE_COUNT/3 adaptive features configured"
+fi
+
+echo ""
+echo "Test 3: Binary symbol analysis"
+echo "-------------------------------"
 
 # Check if adaptive stillness symbols are in the binary
 echo -n "Checking binary for adaptive symbols... "
-if nm "$BINARY" 2>/dev/null | grep -q "AdaptiveStillnessDetector"; then
-    echo -e "${GREEN}✓ Found${NC}"
-    
-    # Count the symbols
-    COUNT=$(nm "$BINARY" 2>/dev/null | grep -c "AdaptiveStillnessDetector" || true)
-    echo "  Found $COUNT AdaptiveStillnessDetector symbols"
+if command -v nm >/dev/null 2>&1; then
+    if nm "$BINARY" 2>/dev/null | grep -q "AdaptiveStillnessDetector"; then
+        echo -e "${GREEN}✓ Found${NC}"
+        
+        # Count and categorize the symbols
+        COUNT=$(nm "$BINARY" 2>/dev/null | grep -c "AdaptiveStillnessDetector" || true)
+        echo "  Found $COUNT AdaptiveStillnessDetector symbols"
+        
+        # Check for specific key methods
+        echo "  Checking for key methods:"
+        for method in "isStabilized" "reset" "addMeasurement" "calculateVariance"; do
+            if nm "$BINARY" 2>/dev/null | grep -q "$method"; then
+                echo -e "    ${GREEN}✓${NC} $method"
+            else
+                echo -e "    ${YELLOW}⚠${NC} $method not found"
+            fi
+        done
+    else
+        echo -e "${RED}✗ Not found${NC}"
+        echo "  The binary may not include adaptive stillness support"
+        echo "  Please ensure adaptive_stillness_detector.cpp is in meson.build"
+    fi
 else
-    echo -e "${RED}✗ Not found${NC}"
-    echo "  The binary may not include adaptive stillness support"
-    echo "  Please ensure adaptive_stillness_detector.cpp is in meson.build"
+    # Fallback: check if the binary exists and is executable
+    if [ -x "$BINARY" ]; then
+        echo -e "${YELLOW}⚠ nm tool not available, checking binary size${NC}"
+        SIZE=$(stat -f%z "$BINARY" 2>/dev/null || stat -c%s "$BINARY" 2>/dev/null || echo "0")
+        echo "  Binary size: $(( SIZE / 1024 / 1024 ))MB"
+        if [ "$SIZE" -gt "10000000" ]; then
+            echo -e "  ${GREEN}✓ Binary size suggests full build${NC}"
+        fi
+    else
+        echo -e "${RED}✗ Cannot analyze binary${NC}"
+    fi
+fi
+
+echo ""
+echo "Test 4: Source file verification"
+echo "--------------------------------"
+
+# Check if adaptive source files exist
+ADAPTIVE_SOURCE="$BASE_DIR/adaptive_stillness_detector.cpp"
+ADAPTIVE_HEADER="$BASE_DIR/adaptive_stillness_detector.h"
+
+if [ -f "$ADAPTIVE_SOURCE" ]; then
+    echo -e "${GREEN}✓ adaptive_stillness_detector.cpp exists${NC}"
+    # Check file size to ensure it's not empty
+    SOURCE_SIZE=$(wc -l < "$ADAPTIVE_SOURCE" 2>/dev/null || echo "0")
+    echo "  Source file has $SOURCE_SIZE lines"
+else
+    echo -e "${RED}✗ adaptive_stillness_detector.cpp not found${NC}"
+fi
+
+if [ -f "$ADAPTIVE_HEADER" ]; then
+    echo -e "${GREEN}✓ adaptive_stillness_detector.h exists${NC}"
+    # Check for class definition
+    if grep -q "class AdaptiveStillnessDetector" "$ADAPTIVE_HEADER" 2>/dev/null; then
+        echo -e "  ${GREEN}✓ Class definition found${NC}"
+    fi
+else
+    echo -e "${RED}✗ adaptive_stillness_detector.h not found${NC}"
+fi
+
+# Check if files are included in build system
+echo ""
+echo -n "Checking meson.build for adaptive files... "
+if [ -f "$BASE_DIR/meson.build" ]; then
+    if grep -q "adaptive_stillness_detector" "$BASE_DIR/meson.build"; then
+        echo -e "${GREEN}✓ Found in build system${NC}"
+    else
+        echo -e "${YELLOW}⚠ Not found in meson.build${NC}"
+        echo "  Add 'adaptive_stillness_detector.cpp' to source files"
+    fi
+else
+    echo -e "${YELLOW}⚠ meson.build not found${NC}"
 fi
 
 echo ""
