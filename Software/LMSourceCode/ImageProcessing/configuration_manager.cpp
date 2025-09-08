@@ -30,6 +30,32 @@ namespace {
             }
         }
     }
+    
+    // Helper function to convert YAML to property tree
+    void yaml_to_ptree(const YAML::Node& node, boost::property_tree::ptree& pt, const std::string& key = "") {
+        if (node.IsScalar()) {
+            pt.put(key, node.as<std::string>());
+        } else if (node.IsSequence()) {
+            for (size_t i = 0; i < node.size(); ++i) {
+                yaml_to_ptree(node[i], pt, key + "." + std::to_string(i));
+            }
+        } else if (node.IsMap()) {
+            for (const auto& it : node) {
+                std::string child_key = key.empty() ? it.first.as<std::string>() : key + "." + it.first.as<std::string>();
+                yaml_to_ptree(it.second, pt, child_key);
+            }
+        }
+    }
+    
+    // Helper function to load YAML file to property tree
+    void load_yaml_to_ptree(const std::string& filename, boost::property_tree::ptree& pt) {
+        try {
+            YAML::Node yaml_node = YAML::LoadFile(filename);
+            yaml_to_ptree(yaml_node, pt);
+        } catch (const YAML::Exception& e) {
+            throw std::runtime_error("Failed to load YAML file: " + std::string(e.what()));
+        }
+    }
 }
 
 namespace golf_sim {
