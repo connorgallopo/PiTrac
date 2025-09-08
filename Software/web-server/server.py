@@ -180,6 +180,17 @@ class PiTracServer:
             """Get configuration organized by categories"""
             return self.config_manager.get_categories()
         
+        @self.app.get("/api/config/basic-subcategories")
+        async def get_basic_subcategories() -> Dict[str, List[str]]:
+            """Get subcategories for Basic settings"""
+            return self.config_manager.get_basic_subcategories()
+        
+        @self.app.get("/api/config/metadata")
+        async def get_config_metadata() -> Dict[str, Any]:
+            """Get configuration metadata including descriptions"""
+            metadata = self.config_manager.load_configurations_metadata()
+            return metadata.get('settings', {})
+        
         @self.app.get("/api/config/diff")
         async def get_config_diff() -> Dict[str, Any]:
             """Get differences between user settings and defaults"""

@@ -4,6 +4,8 @@ let currentConfig = {};
 let defaultConfig = {};
 let userSettings = {};
 let categories = {};
+let basicSubcategories = {};
+let configMetadata = {};
 let modifiedSettings = new Set();
 let ws = null;
 
@@ -42,17 +44,21 @@ function initWebSocket() {
 async function loadConfiguration() {
     try {
         // Load all configuration data in parallel
-        const [configRes, defaultsRes, userRes, categoriesRes] = await Promise.all([
+        const [configRes, defaultsRes, userRes, categoriesRes, subcategoriesRes, metadataRes] = await Promise.all([
             fetch('/api/config'),
             fetch('/api/config/defaults'),
             fetch('/api/config/user'),
-            fetch('/api/config/categories')
+            fetch('/api/config/categories'),
+            fetch('/api/config/basic-subcategories'),
+            fetch('/api/config/metadata')
         ]);
         
         const configData = await configRes.json();
         const defaultsData = await defaultsRes.json();
         const userData = await userRes.json();
         categories = await categoriesRes.json();
+        basicSubcategories = await subcategoriesRes.json();
+        configMetadata = await metadataRes.json();
         
         currentConfig = configData.data || {};
         defaultConfig = defaultsData.data || {};
@@ -122,12 +128,18 @@ function selectCategory(category) {
         }
     });
     
-    // Filter configuration display
-    if (category === 'all') {
+    // For Basic category, re-render with subcategories
+    if (category === 'Basic') {
+        renderConfiguration('Basic');
+    } else if (category === 'all') {
+        // Show all categories
+        renderConfiguration();
         document.querySelectorAll('.config-group').forEach(group => {
             group.style.display = 'block';
         });
     } else {
+        // Filter to show only selected category
+        renderConfiguration();
         document.querySelectorAll('.config-group').forEach(group => {
             group.style.display = group.dataset.category === category ? 'block' : 'none';
         });
@@ -135,35 +147,62 @@ function selectCategory(category) {
 }
 
 // Render configuration UI
-function renderConfiguration() {
+function renderConfiguration(selectedCategory = null) {
     const content = document.getElementById('configContent');
     content.innerHTML = '';
     
-    // Group parameters by category
-    Object.entries(categories).forEach(([category, keys]) => {
-        const group = document.createElement('div');
-        group.className = 'config-group';
-        group.dataset.category = category;
-        
-        const title = document.createElement('h3');
-        title.className = 'config-group-title';
-        title.textContent = category;
-        if (category === 'Basic') {
-            title.innerHTML = category + ' <span style="color: var(--warning);">★</span>';
-        }
-        group.appendChild(title);
-        
-        keys.forEach(key => {
-            const value = getNestedValue(currentConfig, key);
-            const defaultValue = getNestedValue(defaultConfig, key);
-            const isModified = getNestedValue(userSettings, key) !== undefined;
+    // Special handling for Basic category with subcategories
+    if (selectedCategory === 'Basic' && basicSubcategories && Object.keys(basicSubcategories).length > 0) {
+        // Render Basic settings grouped by subcategory
+        Object.entries(basicSubcategories).forEach(([subcategory, keys]) => {
+            const group = document.createElement('div');
+            group.className = 'config-group';
+            group.dataset.category = 'Basic';
+            group.dataset.subcategory = subcategory;
             
-            const item = createConfigItem(key, value, defaultValue, isModified);
-            group.appendChild(item);
+            const title = document.createElement('h3');
+            title.className = 'config-group-title';
+            title.textContent = subcategory;
+            group.appendChild(title);
+            
+            keys.forEach(key => {
+                const value = getNestedValue(currentConfig, key);
+                const defaultValue = getNestedValue(defaultConfig, key);
+                const isModified = getNestedValue(userSettings, key) !== undefined;
+                
+                const item = createConfigItem(key, value, defaultValue, isModified);
+                group.appendChild(item);
+            });
+            
+            content.appendChild(group);
         });
-        
-        content.appendChild(group);
-    });
+    } else {
+        // Regular category rendering
+        Object.entries(categories).forEach(([category, keys]) => {
+            const group = document.createElement('div');
+            group.className = 'config-group';
+            group.dataset.category = category;
+            
+            const title = document.createElement('h3');
+            title.className = 'config-group-title';
+            title.textContent = category;
+            if (category === 'Basic') {
+                title.innerHTML = category + ' <span style="color: var(--warning);">★</span>';
+            }
+            group.appendChild(title);
+            
+            keys.forEach(key => {
+                const value = getNestedValue(currentConfig, key);
+                const defaultValue = getNestedValue(defaultConfig, key);
+                const isModified = getNestedValue(userSettings, key) !== undefined;
+                
+                const item = createConfigItem(key, value, defaultValue, isModified);
+                group.appendChild(item);
+            });
+            
+            content.appendChild(group);
+        });
+    }
 }
 
 // Create configuration item element
@@ -179,17 +218,27 @@ function createConfigItem(key, value, defaultValue, isModified) {
     const label = document.createElement('div');
     label.className = 'config-label';
     
-    // Extract readable name from key
-    const parts = key.split('.');
-    const name = parts[parts.length - 1]
-        .replace(/^k/, '')
-        .replace(/([A-Z])/g, ' $1')
-        .trim();
+    // Get metadata for this setting
+    const metadata = configMetadata[key] || {};
     
-    label.innerHTML = `
-        <div class="config-label-name">${name}</div>
-        <span class="key">${key}</span>
-    `;
+    // Use display name from metadata or extract readable name from key
+    const displayName = metadata.displayName || (() => {
+        const parts = key.split('.');
+        const name = parts[parts.length - 1]
+            .replace(/^k/, '')
+            .replace(/([A-Z])/g, ' $1')
+            .trim();
+        return name;
+    })();
+    
+    // Build label HTML with optional description
+    let labelHTML = `<div class="config-label-name">${displayName}</div>`;
+    if (metadata.description) {
+        labelHTML += `<div class="config-description">${metadata.description}</div>`;
+    }
+    labelHTML += `<span class="key">${key}</span>`;
+    
+    label.innerHTML = labelHTML;
     item.appendChild(label);
     
     // Input

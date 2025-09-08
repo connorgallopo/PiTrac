@@ -314,109 +314,112 @@ class ConfigurationManager:
         
         return True, ""
     
+    def load_configurations_metadata(self):
+        """
+        Load configuration metadata from configurations.json
+        """
+        try:
+            config_path = os.path.join(os.path.dirname(__file__), 'configurations.json')
+            with open(config_path, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading configurations.json: {e}")
+            return {"settings": {}}
+    
+    def flatten_config(self, config: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
+        """Flatten nested config dict into dot-notation keys."""
+        result = {}
+        for key, value in config.items():
+            full_key = f"{prefix}.{key}" if prefix else key
+            if isinstance(value, dict):
+                result.update(self.flatten_config(value, full_key))
+            else:
+                result[full_key] = value
+        return result
+    
     def get_categories(self) -> Dict[str, List[str]]:
-        """Get configuration organized by categories
+        """Get configuration organized by categories based on configurations.json
         
         Returns:
             Dictionary with category names and their parameters
         """
-        # Define basic settings that should appear first
-        basic_settings = [
-            # System mode
-            "gs_config.modes.kStartInPuttingMode",
-            
-            # Camera settings
-            "gs_config.cameras.kCamera1Gain",
-            "gs_config.cameras.kCamera2Gain",
-            
-            # Simulator interfaces
-            "gs_config.golf_simulator_interfaces.E6.kE6ConnectAddress",
-            "gs_config.golf_simulator_interfaces.E6.kE6ConnectPort",
-            "gs_config.golf_simulator_interfaces.GSPro.kGSProConnectAddress",
-            "gs_config.golf_simulator_interfaces.GSPro.kGSProConnectPort",
-            
-            # Ball detection basics
-            "gs_config.ball_identification.kUseCLAHEProcessing",
-            "gs_config.ball_identification.kCLAHEClipLimit",
-            "gs_config.ball_position.kExpectedBallRadiusPixelsAt40cm",
-            
-            # Strobing (LED timing) adjustments - using correct key names
-            "gs_config.strobing.kStandardBallSpeedSlowdownPercentage",
-            "gs_config.strobing.kPracticeBallSpeedSlowdownPercentage",
-            "gs_config.strobing.kPuttingBallSpeedSlowdownPercentage",
-            
-            # Common storage settings - using correct key names
-            "gs_config.system.kLogIntermediateExposureImagesToFile",
-            "gs_config.system.kLogIntermediateSpinImagesToFile",
-            "gs_config.system.kLogWebserverImagesToFile",
-            "gs_config.system.kLogDiagnosticImagesToUniqueFiles",
-            "gs_config.system.kLinuxBaseImageLoggingDir",  # Main image directory
-            "gs_config.ipc_interface.kWebServerShareDirectory",
-            "gs_config.ipc_interface.kWebServerTomcatShareDirectory",
-            
-            # Network
-            "gs_config.ipc_interface.kWebActiveMQHostAddress",
-            "gs_config.ipc_interface.kRefreshTimeSeconds",  # Fixed key name
-            
-            # Spin calculation - using correct key names
-            "gs_config.golf_simulator_interfaces.kSkipSpinCalculation",
-            "gs_config.golf_simulator_interfaces.kWriteSpinAnalysisCsvFiles",
-        ]
+        metadata = self.load_configurations_metadata()
+        settings_metadata = metadata.get('settings', {})
         
+        # Initialize categories
         categories = {
             "Basic": [],
             "Cameras": [],
             "Simulators": [],
             "Ball Detection": [],
+            "AI Detection": [],
             "Storage": [],
             "Network": [],
             "Logging": [],
+            "Strobing": [],
             "Spin Analysis": [],
             "Calibration": [],
             "Advanced": []
         }
         
-        def categorize_key(key: str) -> str:
-            # Check if it's a basic setting first
-            if key in basic_settings:
-                return "Basic"
-            elif "camera" in key.lower() or "Camera" in key:
-                return "Cameras"
-            elif any(x in key for x in ["GSPro", "E6", "golf_simulator"]):
-                return "Simulators"
-            elif "ball" in key.lower() or "hough" in key.lower():
-                return "Ball Detection"
-            elif any(x in key.lower() for x in ["log", "dir", "path", "file"]):
-                return "Storage"
-            elif any(x in key.lower() for x in ["network", "broker", "port", "address"]):
-                return "Network"
-            elif "logging" in key.lower():
-                return "Logging"
-            elif "spin" in key.lower():
-                return "Spin Analysis"
-            elif "calibrat" in key.lower():
-                return "Calibration"
+        # First, categorize based on metadata
+        for key in self.flatten_config(self.merged_config).keys():
+            if key in settings_metadata:
+                setting_info = settings_metadata[key]
+                if setting_info.get('showInBasic', False):
+                    categories['Basic'].append(key)
+                category = setting_info.get('category', 'Advanced')
+                if category in categories:
+                    categories[category].append(key)
             else:
-                return "Advanced"
-        
-        def extract_keys(d: Dict, prefix: str = "") -> None:
-            for key, value in d.items():
-                full_key = f"{prefix}.{key}" if prefix else key
-                
-                if isinstance(value, dict):
-                    extract_keys(value, full_key)
-                else:
-                    category = categorize_key(full_key)
-                    categories[category].append(full_key)
-        
-        extract_keys(self.merged_config)
-        
-        # Sort keys within each category
-        for category in categories:
-            categories[category].sort()
+                # Fallback categorization for items not in metadata
+                category = self.auto_categorize_key(key)
+                categories[category].append(key)
         
         # Remove empty categories
-        return {k: v for k, v in categories.items() if v}
+        categories = {k: v for k, v in categories.items() if v}
+        
+        return categories
+    
+    def auto_categorize_key(self, key: str) -> str:
+        """Auto-categorize keys that aren't in the metadata file."""
+        if "camera" in key.lower():
+            return "Cameras"
+        elif any(x in key for x in ["GSPro", "E6", "golf_simulator"]):
+            return "Simulators"
+        elif any(x in key.lower() for x in ["onnx", "yolo", "sahi", "nms", "confidence"]):
+            return "AI Detection"
+        elif "strob" in key.lower():
+            return "Strobing"
+        elif "ball" in key.lower() or "hough" in key.lower():
+            return "Ball Detection"
+        elif any(x in key.lower() for x in ["log", "dir", "path", "file"]) and "logging" not in key.lower():
+            return "Storage"
+        elif any(x in key.lower() for x in ["network", "broker", "port", "address"]):
+            return "Network"
+        elif "logging" in key.lower():
+            return "Logging"
+        elif "spin" in key.lower():
+            return "Spin Analysis"
+        elif "calibrat" in key.lower():
+            return "Calibration"
+        else:
+            return "Advanced"
+    
+    def get_basic_subcategories(self):
+        """Get subcategories for Basic settings."""
+        metadata = self.load_configurations_metadata()
+        settings_metadata = metadata.get('settings', {})
+        
+        subcategories = {}
+        for key, setting_info in settings_metadata.items():
+            if setting_info.get('showInBasic', False):
+                subcat = setting_info.get('basicSubcategory', 'Other')
+                if subcat not in subcategories:
+                    subcategories[subcat] = []
+                subcategories[subcat].append(key)
+        
+        return subcategories
     
     def export_config(self) -> Dict[str, Any]:
         """Export current configuration for backup/sharing"""
