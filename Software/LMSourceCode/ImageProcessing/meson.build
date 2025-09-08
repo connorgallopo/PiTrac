@@ -163,6 +163,7 @@ pitrac_lm_sources += ([
 			'ball_watcher_image_buffer.cpp',
 			'libcamera_jpeg.cpp',
 			'ball_image_proc.cpp',
+			'adaptive_stillness_detector.cpp',
 			'pulse_strobe.cpp',
 			'colorsys.cpp',
 			'cv_utils.cpp',
