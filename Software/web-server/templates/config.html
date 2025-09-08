@@ -62,10 +62,10 @@
 
         <!-- Status Bar -->
         <div class="status-bar">
-            <div id="status-message"></div>
+            <div id="statusMessage" class="status-message"></div>
             <div class="action-buttons">
                 <button class="btn btn-primary" onclick="saveAllChanges()">
-                    Save All Changes
+                    Save All Changes (<span id="modifiedCount">0</span>)
                 </button>
                 <button class="btn btn-secondary" onclick="reloadConfig()">
                     Reload
@@ -76,21 +76,52 @@
             </div>
         </div>
 
-        <!-- Search Bar -->
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Search settings..." class="search-input">
-            <button onclick="clearSearch()" class="clear-search">Clear</button>
-        </div>
+        <!-- Main Content Grid -->
+        <div class="config-container">
+            <!-- Category Sidebar -->
+            <div class="category-sidebar">
+                <h3>Categories</h3>
+                <ul id="categoryList" class="category-list">
+                    <!-- Categories will be loaded here -->
+                </ul>
+            </div>
 
-        <!-- Configuration Sections -->
-        <div id="config-sections" class="config-sections">
-            <!-- Sections will be dynamically loaded here -->
+            <!-- Configuration Panel -->
+            <div class="config-panel">
+                <!-- Search Bar -->
+                <div class="search-container">
+                    <input type="text" id="searchInput" placeholder="Search settings..." class="search-input" oninput="searchConfig()">
+                    <button onclick="clearSearch()" class="clear-search">Clear</button>
+                </div>
+
+                <!-- Configuration Content -->
+                <div id="configContent" class="config-content">
+                    <!-- Configuration items will be dynamically loaded here -->
+                </div>
+            </div>
         </div>
 
         <!-- Loading Indicator -->
         <div id="loading" class="loading">
             <div class="spinner"></div>
             <p>Loading configuration...</p>
+        </div>
+        
+        <!-- Confirmation Modal -->
+        <div id="confirmModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalTitle">Confirm</h2>
+                    <button class="modal-close" onclick="closeModal()">&times;</button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- Modal content goes here -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -112,24 +143,24 @@
                 btn.classList.remove('active');
             });
             
-            const activeBtn = document.querySelector(`.theme-btn[data-theme="${localStorage.getItem('theme') || 'system'}"]`);
+            const activeBtn = document.querySelector(`.theme-btn[data-theme="${localStorage.getItem('pitrac-theme') || 'system'}"]`);
             if (activeBtn) {
                 activeBtn.classList.add('active');
             }
         }
 
         function setTheme(theme) {
-            localStorage.setItem('theme', theme);
+            localStorage.setItem('pitrac-theme', theme);
             applyTheme(theme);
         }
 
         // Initialize theme
-        const savedTheme = localStorage.getItem('theme') || 'system';
+        const savedTheme = localStorage.getItem('pitrac-theme') || 'system';
         applyTheme(savedTheme);
 
         // Listen for system theme changes
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-            if (localStorage.getItem('theme') === 'system') {
+            if (localStorage.getItem('pitrac-theme') === 'system') {
                 applyTheme('system');
             }
         });
