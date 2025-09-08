@@ -182,7 +182,7 @@ class PiTracProcessManager:
                 with open(self.pid_file, "w") as f:
                     f.write(str(self.process.pid))
 
-                await asyncio.sleep(2)
+                await asyncio.sleep(3)
 
                 if self.process.poll() is None:
                     logger.info(
@@ -209,7 +209,7 @@ class PiTracProcessManager:
                             with open(self.camera2_pid_file, "w") as f:
                                 f.write(str(self.camera2_process.pid))
 
-                            await asyncio.sleep(2)
+                            await asyncio.sleep(3)
 
                             if self.camera2_process.poll() is None:
                                 logger.info(
@@ -223,7 +223,18 @@ class PiTracProcessManager:
                                 }
                             else:
                                 logger.error("Camera2 process exited immediately")
-                                os.kill(self.process.pid, signal.SIGTERM)
+                                if self.camera2_pid_file.exists():
+                                    self.camera2_pid_file.unlink()
+                                self.camera2_process = None
+
+                                try:
+                                    os.kill(self.process.pid, signal.SIGTERM)
+                                except ProcessLookupError:
+                                    pass
+                                if self.pid_file.exists():
+                                    self.pid_file.unlink()
+                                self.process = None
+
                                 return {
                                     "status": "failed",
                                     "message": "Camera2 failed to start - check logs",
@@ -238,6 +249,9 @@ class PiTracProcessManager:
                         }
                 else:
                     logger.error("PiTrac process exited immediately")
+                    if self.pid_file.exists():
+                        self.pid_file.unlink()
+                    self.process = None
                     return {
                         "status": "failed",
                         "message": "PiTrac failed to start - check logs",
@@ -354,9 +368,12 @@ class PiTracProcessManager:
                 with open(self.pid_file, "r") as f:
                     pid = int(f.read().strip())
                     os.kill(pid, 0)
-                    return pid
-            except (ValueError, IOError, ProcessLookupError):
-                pass
+                    with open(f"/proc/{pid}/cmdline", "r") as cmdline:
+                        if "pitrac_lm" in cmdline.read():
+                            return pid
+            except (ValueError, IOError, ProcessLookupError, FileNotFoundError):
+                if self.pid_file.exists():
+                    self.pid_file.unlink()
 
         return None
 
@@ -370,9 +387,12 @@ class PiTracProcessManager:
                 with open(self.camera2_pid_file, "r") as f:
                     pid = int(f.read().strip())
                     os.kill(pid, 0)
-                    return pid
-            except (ValueError, IOError, ProcessLookupError):
-                pass
+                    with open(f"/proc/{pid}/cmdline", "r") as cmdline:
+                        if "pitrac_lm" in cmdline.read():
+                            return pid
+            except (ValueError, IOError, ProcessLookupError, FileNotFoundError):
+                if self.camera2_pid_file.exists():
+                    self.camera2_pid_file.unlink()
 
         return None
 
