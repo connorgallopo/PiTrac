@@ -156,6 +156,7 @@ class PiTracProcessManager:
                     stdout=log,
                     stderr=subprocess.STDOUT,
                     env=env,
+                    cwd=str(Path.home()),
                     preexec_fn=os.setsid,  # Create new process group for clean shutdown
                 )
 
