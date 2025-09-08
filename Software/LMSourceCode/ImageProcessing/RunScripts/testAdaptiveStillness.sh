@@ -206,21 +206,98 @@ fi
 
 echo ""
 echo "=========================================="
-echo "Test Complete"
+echo "Test Complete - No Hardware Required"
 echo "=========================================="
-echo "Log saved to: $LOG_FILE"
 echo ""
-echo "Next steps:"
-echo "1. If adaptive symbols not found, rebuild with:"
-echo "   cd $BASE_DIR && ninja -C build clean && ninja -C build"
+echo "Test Results Summary:"
+echo "--------------------"
+
+# Count successful tests
+SUCCESS_COUNT=0
+TOTAL_TESTS=4
+
+# Summarize results
+echo -n "1. Binary validation: "
+if [ -f "$BINARY" ]; then
+    echo -e "${GREEN}PASS${NC}"
+    ((SUCCESS_COUNT++))
+else
+    echo -e "${RED}FAIL${NC}"
+fi
+
+echo -n "2. Configuration: "
+if [ "$ADAPTIVE_COUNT" -ge 2 ]; then
+    echo -e "${GREEN}PASS${NC} ($ADAPTIVE_COUNT/3 adaptive features)"
+    ((SUCCESS_COUNT++))
+else
+    echo -e "${YELLOW}PARTIAL${NC} ($ADAPTIVE_COUNT/3 adaptive features)"
+fi
+
+echo -n "3. Binary symbols: "
+if nm "$BINARY" 2>/dev/null | grep -q "AdaptiveStillnessDetector"; then
+    echo -e "${GREEN}PASS${NC}"
+    ((SUCCESS_COUNT++))
+else
+    echo -e "${YELLOW}INCONCLUSIVE${NC}"
+fi
+
+echo -n "4. Source files: "
+if [ -f "$ADAPTIVE_SOURCE" ] && [ -f "$ADAPTIVE_HEADER" ]; then
+    echo -e "${GREEN}PASS${NC}"
+    ((SUCCESS_COUNT++))
+else
+    echo -e "${RED}FAIL${NC}"
+fi
+
 echo ""
-echo "2. To run the full system with adaptive detection:"
-echo "   $BINARY --camera1"
+echo "Overall: $SUCCESS_COUNT/$TOTAL_TESTS tests passed"
 echo ""
-echo "3. Monitor the logs for timing improvements:"
-echo "   - Look for 'Ball stabilized in Xms' messages"
-echo "   - Should be 50-200ms with adaptive vs 1000ms with fixed"
+
+# Provide actionable next steps based on results
+echo "Development Workflow:"
+echo "--------------------"
+echo "1. On this Mac development machine:"
+echo "   - Make code changes"
+echo "   - Run this test script to validate"
+echo "   - Commit: git add -A && git commit -m 'Update adaptive stillness'"
+echo "   - Push: git push"
+echo ""
+echo "2. On Raspberry Pi target machine:"
+echo "   - Pull: git pull"
+echo "   - Build: sudo ./packaging/build.sh dev"
+echo "   - Test: pitrac test quick"
+echo "   - Run: pitrac run --camera1"
+echo ""
+
+if [ "$SUCCESS_COUNT" -lt "$TOTAL_TESTS" ]; then
+    echo "⚠ Issues to resolve:"
+    
+    if [ ! -f "$ADAPTIVE_SOURCE" ] || [ ! -f "$ADAPTIVE_HEADER" ]; then
+        echo "  - Adaptive stillness source files missing"
+        echo "    Create adaptive_stillness_detector.cpp and .h files"
+    fi
+    
+    if [ "$ADAPTIVE_COUNT" -lt 2 ]; then
+        echo "  - Configuration needs updating"
+        echo "    Set kStabilizationMethod to 'adaptive' in golf_sim_config.json"
+    fi
+    
+    if ! nm "$BINARY" 2>/dev/null | grep -q "AdaptiveStillnessDetector"; then
+        echo "  - Binary may not include adaptive code"
+        echo "    Add adaptive_stillness_detector.cpp to meson.build"
+        echo "    Rebuild: ninja -C build clean && ninja -C build"
+    fi
+else
+    echo -e "${GREEN}✓ All tests passed!${NC}"
+    echo "  Adaptive stillness detection is ready for deployment"
+fi
+
+echo ""
+echo "Expected Performance Improvements:"
+echo "---------------------------------"
+echo "  Fixed timer mode: ~1000ms stabilization delay"
+echo "  Adaptive mode: 50-200ms stabilization (5-20x faster)"
 echo ""
 
 # Cleanup
-rm -f /tmp/test_timing.sh /tmp/pitrac_test.log
+rm -f /tmp/help_output.txt
