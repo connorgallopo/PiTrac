@@ -48,7 +48,7 @@ class PiTracProcessManager:
 
         config = self._load_pitrac_config()
 
-        system_config = config.get("system", {})
+        system_config = config.get("system") or {}
 
         if system_config.get("mode") == "dual":
             camera_role = system_config.get("camera_role", "camera1")
@@ -57,7 +57,7 @@ class PiTracProcessManager:
             system_mode = "camera1"
         cmd.append(f"--system_mode={system_mode}")
 
-        logging_config = config.get("logging", {})
+        logging_config = config.get("logging") or {}
         log_level = logging_config.get("level", "info")
         if log_level == "trace":
             cmd.append("--trace")
@@ -66,13 +66,13 @@ class PiTracProcessManager:
         elif log_level == "info":
             cmd.append("--info")
 
-        network_config = config.get("network", {})
+        network_config = config.get("network") or {}
         msg_broker = network_config.get("broker_address")
         if not msg_broker:
             msg_broker = "tcp://localhost:61616"
         cmd.append(f"--msg_broker_address={msg_broker}")
 
-        storage_config = config.get("storage", {})
+        storage_config = config.get("storage") or {}
         base_image_dir = storage_config.get("image_dir")
         if not base_image_dir:
             base_image_dir = str(Path.home() / "LM_Shares" / "Images")
@@ -83,7 +83,7 @@ class PiTracProcessManager:
             web_share_dir = str(Path.home() / "LM_Shares" / "WebShare")
         cmd.append(f"--web_server_share_dir={web_share_dir}")
 
-        simulators_config = config.get("simulators", {})
+        simulators_config = config.get("simulators") or {}
         e6_host = simulators_config.get("e6_host")
         if e6_host:
             cmd.append(f"--e6_host_address={e6_host}")
@@ -125,17 +125,17 @@ class PiTracProcessManager:
 
             # Add camera configuration from YAML if present
             config = self._load_pitrac_config()
-            cameras_config = config.get("cameras", {})
+            cameras_config = config.get("cameras") or {}
 
             # Camera slot 1
-            slot1 = cameras_config.get("slot1", {})
+            slot1 = cameras_config.get("slot1") or {}
             if "type" in slot1:
                 env["PITRAC_SLOT1_CAMERA_TYPE"] = str(slot1["type"])
             if "lens" in slot1:
                 env["PITRAC_SLOT1_LENS_TYPE"] = str(slot1["lens"])
 
             # Camera slot 2
-            slot2 = cameras_config.get("slot2", {})
+            slot2 = cameras_config.get("slot2") or {}
             if "type" in slot2:
                 env["PITRAC_SLOT2_CAMERA_TYPE"] = str(slot2["type"])
             if "lens" in slot2:

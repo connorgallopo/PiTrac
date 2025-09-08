@@ -569,7 +569,9 @@ EOF
     
     # Reset GPIO if possible (GPIO 25 is used by PiTrac for pulse strobe)
     log_info "Attempting to reset GPIO resources..."
-    echo "25" 2>/dev/null | tee /sys/class/gpio/unexport > /dev/null || true
+    if [ -d "/sys/class/gpio/gpio25" ]; then
+        echo "25" | tee /sys/class/gpio/unexport > /dev/null 2>&1 || true
+    fi
     
     # Give the system a moment to release resources
     sleep 1
