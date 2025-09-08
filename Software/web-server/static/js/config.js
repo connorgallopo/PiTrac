@@ -1,0 +1,516 @@
+// Configuration Manager JavaScript
+
+let currentConfig = {};
+let defaultConfig = {};
+let userSettings = {};
+let categories = {};
+let modifiedSettings = new Set();
+let ws = null;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    initWebSocket();
+    loadConfiguration();
+});
+
+// Initialize WebSocket connection
+function initWebSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'config_update') {
+            updateStatus(`Configuration updated: ${data.key}`, 'success');
+            if (data.requires_restart) {
+                updateStatus('Restart required for changes to take effect', 'warning');
+            }
+        } else if (data.type === 'config_reset') {
+            updateStatus('Configuration reset to defaults', 'success');
+            loadConfiguration();
+        }
+    };
+    
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        updateStatus('WebSocket connection error', 'error');
+    };
+}
+
+// Load configuration from server
+async function loadConfiguration() {
+    try {
+        // Load all configuration data in parallel
+        const [configRes, defaultsRes, userRes, categoriesRes] = await Promise.all([
+            fetch('/api/config'),
+            fetch('/api/config/defaults'),
+            fetch('/api/config/user'),
+            fetch('/api/config/categories')
+        ]);
+        
+        const configData = await configRes.json();
+        const defaultsData = await defaultsRes.json();
+        const userData = await userRes.json();
+        categories = await categoriesRes.json();
+        
+        currentConfig = configData.data || {};
+        defaultConfig = defaultsData.data || {};
+        userSettings = userData.data || {};
+        
+        renderCategories();
+        renderConfiguration();
+        updateModifiedCount();
+        
+        updateStatus('Configuration loaded', 'success');
+    } catch (error) {
+        console.error('Failed to load configuration:', error);
+        updateStatus('Failed to load configuration', 'error');
+    }
+}
+
+// Render category list
+function renderCategories() {
+    const categoryList = document.getElementById('categoryList');
+    categoryList.innerHTML = '<li class="category-item active" data-category="all">All Settings</li>';
+    
+    Object.keys(categories).forEach(category => {
+        const li = document.createElement('li');
+        li.className = 'category-item';
+        li.dataset.category = category;
+        li.textContent = category + ` (${categories[category].length})`;
+        li.onclick = () => selectCategory(category);
+        categoryList.appendChild(li);
+    });
+}
+
+// Select category
+function selectCategory(category) {
+    // Update active category
+    document.querySelectorAll('.category-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.category === category) {
+            item.classList.add('active');
+        }
+    });
+    
+    // Filter configuration display
+    if (category === 'all') {
+        document.querySelectorAll('.config-group').forEach(group => {
+            group.style.display = 'block';
+        });
+    } else {
+        document.querySelectorAll('.config-group').forEach(group => {
+            group.style.display = group.dataset.category === category ? 'block' : 'none';
+        });
+    }
+}
+
+// Render configuration UI
+function renderConfiguration() {
+    const content = document.getElementById('configContent');
+    content.innerHTML = '';
+    
+    // Group parameters by category
+    Object.entries(categories).forEach(([category, keys]) => {
+        const group = document.createElement('div');
+        group.className = 'config-group';
+        group.dataset.category = category;
+        
+        const title = document.createElement('h3');
+        title.textContent = category;
+        group.appendChild(title);
+        
+        keys.forEach(key => {
+            const value = getNestedValue(currentConfig, key);
+            const defaultValue = getNestedValue(defaultConfig, key);
+            const isModified = getNestedValue(userSettings, key) !== undefined;
+            
+            const item = createConfigItem(key, value, defaultValue, isModified);
+            group.appendChild(item);
+        });
+        
+        content.appendChild(group);
+    });
+}
+
+// Create configuration item element
+function createConfigItem(key, value, defaultValue, isModified) {
+    const item = document.createElement('div');
+    item.className = 'config-item';
+    if (isModified) {
+        item.classList.add('modified');
+    }
+    item.dataset.key = key;
+    
+    // Label
+    const label = document.createElement('div');
+    label.className = 'config-label';
+    
+    // Extract readable name from key
+    const parts = key.split('.');
+    const name = parts[parts.length - 1]
+        .replace(/^k/, '')
+        .replace(/([A-Z])/g, ' $1')
+        .trim();
+    
+    label.innerHTML = `
+        ${name}
+        <span class="key">${key}</span>
+    `;
+    item.appendChild(label);
+    
+    // Input
+    const inputContainer = document.createElement('div');
+    const input = createInput(key, value);
+    input.className = 'config-input';
+    input.dataset.key = key;
+    input.dataset.original = value;
+    input.onchange = () => handleValueChange(key, input.value);
+    inputContainer.appendChild(input);
+    item.appendChild(inputContainer);
+    
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = 'config-actions';
+    
+    if (isModified) {
+        const resetBtn = document.createElement('button');
+        resetBtn.className = 'btn btn-secondary btn-small';
+        resetBtn.textContent = 'Reset';
+        resetBtn.onclick = () => resetValue(key);
+        actions.appendChild(resetBtn);
+    }
+    
+    item.appendChild(actions);
+    
+    return item;
+}
+
+// Create appropriate input based on value type
+function createInput(key, value) {
+    if (typeof value === 'boolean' || value === "0" || value === "1") {
+        const select = document.createElement('select');
+        select.innerHTML = `
+            <option value="true" ${value === true || value === "1" ? 'selected' : ''}>True</option>
+            <option value="false" ${value === false || value === "0" ? 'selected' : ''}>False</option>
+        `;
+        return select;
+    } else if (typeof value === 'number' || !isNaN(value)) {
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.value = value;
+        
+        // Set constraints based on key patterns
+        if (key.includes('Port')) {
+            input.min = 1;
+            input.max = 65535;
+        } else if (key.includes('Gain')) {
+            input.min = 0.5;
+            input.max = 16;
+            input.step = 0.1;
+        }
+        
+        return input;
+    } else {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = value || '';
+        return input;
+    }
+}
+
+// Handle value change
+async function handleValueChange(key, value) {
+    try {
+        // Convert value to appropriate type
+        if (value === 'true') value = true;
+        else if (value === 'false') value = false;
+        else if (!isNaN(value) && value !== '') value = Number(value);
+        
+        // Track as modified
+        modifiedSettings.add(key);
+        updateModifiedCount();
+        
+        // Update UI
+        const item = document.querySelector(`[data-key="${key}"]`);
+        if (item) {
+            item.classList.add('modified');
+        }
+        
+        updateStatus(`Modified: ${key}`, 'success');
+    } catch (error) {
+        console.error('Failed to handle value change:', error);
+        updateStatus('Failed to update value', 'error');
+    }
+}
+
+// Save all changes
+async function saveChanges() {
+    if (modifiedSettings.size === 0) {
+        updateStatus('No changes to save', 'warning');
+        return;
+    }
+    
+    updateStatus('Saving changes...', '');
+    
+    const errors = [];
+    const requiresRestart = [];
+    
+    for (const key of modifiedSettings) {
+        const input = document.querySelector(`[data-key="${key}"] .config-input`);
+        if (!input) continue;
+        
+        let value = input.value;
+        
+        // Convert value type
+        if (value === 'true') value = true;
+        else if (value === 'false') value = false;
+        else if (!isNaN(value) && value !== '') value = Number(value);
+        
+        try {
+            const response = await fetch(`/api/config/${key}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ value })
+            });
+            
+            const result = await response.json();
+            
+            if (result.error) {
+                errors.push(`${key}: ${result.error}`);
+            } else if (result.requires_restart) {
+                requiresRestart.push(key);
+            }
+        } catch (error) {
+            errors.push(`${key}: ${error.message}`);
+        }
+    }
+    
+    if (errors.length > 0) {
+        updateStatus(`Errors: ${errors.join(', ')}`, 'error');
+    } else {
+        modifiedSettings.clear();
+        updateModifiedCount();
+        
+        if (requiresRestart.length > 0) {
+            updateStatus('Changes saved. Restart required for some settings.', 'warning');
+        } else {
+            updateStatus('All changes saved successfully', 'success');
+        }
+        
+        // Reload to get fresh data
+        setTimeout(() => loadConfiguration(), 1000);
+    }
+}
+
+// Reset single value
+async function resetValue(key) {
+    try {
+        const defaultValue = getNestedValue(defaultConfig, key);
+        
+        const response = await fetch(`/api/config/${key}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value: defaultValue })
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            updateStatus(`Failed to reset: ${result.error}`, 'error');
+        } else {
+            updateStatus(`Reset ${key} to default`, 'success');
+            modifiedSettings.delete(key);
+            updateModifiedCount();
+            
+            // Update UI
+            const item = document.querySelector(`[data-key="${key}"]`);
+            if (item) {
+                item.classList.remove('modified');
+                const input = item.querySelector('.config-input');
+                if (input) {
+                    input.value = defaultValue;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Failed to reset value:', error);
+        updateStatus('Failed to reset value', 'error');
+    }
+}
+
+// Reset all to defaults
+function resetAll() {
+    showConfirm(
+        'Reset All Settings',
+        'Are you sure you want to reset all settings to defaults? This cannot be undone.',
+        async () => {
+            try {
+                const response = await fetch('/api/config/reset', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('All settings reset to defaults', 'success');
+                    modifiedSettings.clear();
+                    loadConfiguration();
+                } else {
+                    updateStatus(`Failed to reset: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Failed to reset all:', error);
+                updateStatus('Failed to reset configuration', 'error');
+            }
+        }
+    );
+}
+
+// Reload configuration
+async function reloadConfig() {
+    updateStatus('Reloading configuration...', '');
+    await loadConfiguration();
+}
+
+// Show differences
+async function showDiff() {
+    try {
+        const response = await fetch('/api/config/diff');
+        const result = await response.json();
+        const diff = result.data || {};
+        
+        if (Object.keys(diff).length === 0) {
+            updateStatus('No differences from defaults', '');
+            return;
+        }
+        
+        // Format diff for display
+        let diffHtml = '<h3>Configuration Differences</h3><ul>';
+        Object.entries(diff).forEach(([key, values]) => {
+            diffHtml += `<li><strong>${key}</strong><br>`;
+            diffHtml += `Default: ${JSON.stringify(values.default)}<br>`;
+            diffHtml += `Current: ${JSON.stringify(values.user)}</li>`;
+        });
+        diffHtml += '</ul>';
+        
+        showModal('Configuration Differences', diffHtml);
+    } catch (error) {
+        console.error('Failed to get diff:', error);
+        updateStatus('Failed to get differences', 'error');
+    }
+}
+
+// Export configuration
+async function exportConfig() {
+    try {
+        const response = await fetch('/api/config/export');
+        const config = await response.json();
+        
+        // Create download
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `pitrac_config_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        updateStatus('Configuration exported', 'success');
+    } catch (error) {
+        console.error('Failed to export:', error);
+        updateStatus('Failed to export configuration', 'error');
+    }
+}
+
+// Import configuration
+function importConfig() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            const text = await file.text();
+            const config = JSON.parse(text);
+            
+            const response = await fetch('/api/config/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(config)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                updateStatus('Configuration imported successfully', 'success');
+                loadConfiguration();
+            } else {
+                updateStatus(`Import failed: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            console.error('Failed to import:', error);
+            updateStatus('Failed to import configuration', 'error');
+        }
+    };
+    
+    input.click();
+}
+
+// Filter configuration
+function filterConfig() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    
+    document.querySelectorAll('.config-item').forEach(item => {
+        const key = item.dataset.key.toLowerCase();
+        const label = item.querySelector('.config-label').textContent.toLowerCase();
+        
+        if (key.includes(searchTerm) || label.includes(searchTerm)) {
+            item.style.display = 'grid';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Utility functions
+function getNestedValue(obj, path) {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
+function updateStatus(message, type = '') {
+    const statusEl = document.getElementById('statusMessage');
+    statusEl.textContent = message;
+    statusEl.className = 'status-message ' + type;
+}
+
+function updateModifiedCount() {
+    document.getElementById('modifiedCount').textContent = modifiedSettings.size;
+}
+
+function showModal(title, body) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').innerHTML = body;
+    document.getElementById('confirmModal').classList.add('active');
+}
+
+function showConfirm(title, message, onConfirm) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalBody').textContent = message;
+    
+    const confirmBtn = document.getElementById('modalConfirmBtn');
+    confirmBtn.onclick = () => {
+        closeModal();
+        onConfirm();
+    };
+    
+    document.getElementById('confirmModal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('confirmModal').classList.remove('active');
+}

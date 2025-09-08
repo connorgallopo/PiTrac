@@ -2,7 +2,7 @@ import asyncio
 import logging
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import stomp
 import yaml
@@ -22,6 +22,7 @@ from constants import (
 from listeners import ActiveMQListener
 from managers import ConnectionManager, ShotDataStore
 from parsers import ShotDataParser
+from config_manager import ConfigurationManager
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class PiTracServer:
         self.connection_manager = ConnectionManager()
         self.shot_store = ShotDataStore()
         self.parser = ShotDataParser()
+        self.config_manager = ConfigurationManager()
         self.mq_conn: Optional[stomp.Connection] = None
         self.listener: Optional[ActiveMQListener] = None
         self.reconnect_task: Optional[asyncio.Task] = None
@@ -142,6 +144,128 @@ class PiTracServer:
                 "listener": self.listener.get_stats() if self.listener else None,
                 "shot_history_count": len(self.shot_store.get_history(100))
             }
+        
+        # Configuration API endpoints
+        @self.app.get("/config", response_class=HTMLResponse)
+        async def config_page(request: Request) -> Response:
+            """Serve configuration UI page"""
+            return self.templates.TemplateResponse(
+                "config.html",
+                {"request": request}
+            )
+        
+        @self.app.get("/api/config")
+        async def get_config(key: Optional[str] = None) -> Dict[str, Any]:
+            """Get merged configuration or specific key"""
+            config = self.config_manager.get_config(key)
+            if config is None and key:
+                return {"error": f"Configuration key '{key}' not found"}
+            return {"data": config}
+        
+        @self.app.get("/api/config/defaults")
+        async def get_defaults(key: Optional[str] = None) -> Dict[str, Any]:
+            """Get system default configuration"""
+            config = self.config_manager.get_default(key)
+            if config is None and key:
+                return {"error": f"Configuration key '{key}' not found"}
+            return {"data": config}
+        
+        @self.app.get("/api/config/user")
+        async def get_user_settings() -> Dict[str, Any]:
+            """Get user overrides only"""
+            return {"data": self.config_manager.get_user_settings()}
+        
+        @self.app.get("/api/config/categories")
+        async def get_categories() -> Dict[str, List[str]]:
+            """Get configuration organized by categories"""
+            return self.config_manager.get_categories()
+        
+        @self.app.get("/api/config/diff")
+        async def get_config_diff() -> Dict[str, Any]:
+            """Get differences between user settings and defaults"""
+            return {"data": self.config_manager.get_diff()}
+        
+        @self.app.put("/api/config/{key:path}")
+        async def update_config(key: str, request: Request) -> Dict[str, Any]:
+            """Update a configuration value"""
+            try:
+                body = await request.json()
+                value = body.get("value")
+                
+                # Validate the value
+                is_valid, error_msg = self.config_manager.validate_config(key, value)
+                if not is_valid:
+                    return {"error": error_msg}
+                
+                # Set the value
+                success, message, requires_restart = self.config_manager.set_config(key, value)
+                
+                if success:
+                    # Broadcast update to WebSocket clients
+                    await self.connection_manager.broadcast({
+                        "type": "config_update",
+                        "key": key,
+                        "value": value,
+                        "requires_restart": requires_restart
+                    })
+                    
+                    return {
+                        "success": True,
+                        "message": message,
+                        "requires_restart": requires_restart
+                    }
+                else:
+                    return {"error": message}
+                    
+            except Exception as e:
+                logger.error(f"Failed to update config: {e}")
+                return {"error": str(e)}
+        
+        @self.app.post("/api/config/reset")
+        async def reset_config() -> Dict[str, Any]:
+            """Reset all user settings to defaults"""
+            success, message = self.config_manager.reset_all()
+            
+            if success:
+                await self.connection_manager.broadcast({
+                    "type": "config_reset"
+                })
+                
+            return {
+                "success": success,
+                "message": message
+            }
+        
+        @self.app.post("/api/config/reload")
+        async def reload_config() -> Dict[str, str]:
+            """Reload configuration from disk"""
+            self.config_manager.reload()
+            return {"status": "Configuration reloaded"}
+        
+        @self.app.get("/api/config/export")
+        async def export_config() -> Dict[str, Any]:
+            """Export configuration for backup/sharing"""
+            return self.config_manager.export_config()
+        
+        @self.app.post("/api/config/import")
+        async def import_config(request: Request) -> Dict[str, Any]:
+            """Import configuration from exported data"""
+            try:
+                config_data = await request.json()
+                success, message = self.config_manager.import_config(config_data)
+                
+                if success:
+                    await self.connection_manager.broadcast({
+                        "type": "config_import"
+                    })
+                
+                return {
+                    "success": success,
+                    "message": message
+                }
+            except Exception as e:
+                logger.error(f"Failed to import config: {e}")
+                return {"error": str(e)}
     
     def _load_config(self) -> Dict[str, Any]:
         if not CONFIG_FILE.exists():

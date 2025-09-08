@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiTrac Configuration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .header .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .sidebar h2 {
+            font-size: 16px;
+            color: #4a5568;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .category-list {
+            list-style: none;
+        }
+
+        .category-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .category-item:hover {
+            background: #f7fafc;
+        }
+
+        .category-item.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .config-panel {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .config-group {
+            margin-bottom: 30px;
+        }
+
+        .config-group h3 {
+            font-size: 18px;
+            color: #2d3748;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .config-item {
+            display: grid;
+            grid-template-columns: 1fr 300px 100px;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #f7fafc;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .config-item:hover {
+            background: #edf2f7;
+        }
+
+        .config-item.modified {
+            background: #fef5e7;
+            border-left: 3px solid #f39c12;
+        }
+
+        .config-label {
+            font-size: 14px;
+            color: #4a5568;
+        }
+
+        .config-label .key {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #718096;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .config-input {
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .config-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .config-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-message {
+            font-size: 14px;
+            color: #4a5568;
+        }
+
+        .status-message.success {
+            color: #48bb78;
+        }
+
+        .status-message.error {
+            color: #f56565;
+        }
+
+        .status-message.warning {
+            color: #f39c12;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #2d3748;
+            font-size: 20px;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+            color: #4a5568;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .config-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 PiTrac Configuration Manager</h1>
+            <div class="actions">
+                <button class="btn btn-primary" onclick="saveChanges()">
+                    Save Changes
+                </button>
+                <button class="btn btn-secondary" onclick="reloadConfig()">
+                    Reload
+                </button>
+                <button class="btn btn-secondary" onclick="showDiff()">
+                    View Changes
+                </button>
+                <button class="btn btn-secondary" onclick="exportConfig()">
+                    Export
+                </button>
+                <button class="btn btn-secondary" onclick="importConfig()">
+                    Import
+                </button>
+                <button class="btn btn-danger" onclick="resetAll()">
+                    Reset to Defaults
+                </button>
+                <a href="/" class="btn btn-secondary" style="text-decoration: none;">
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <h2>Categories</h2>
+                <ul class="category-list" id="categoryList">
+                    <li class="category-item active" data-category="all">All Settings</li>
+                </ul>
+            </div>
+
+            <div class="config-panel">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search configuration..." onkeyup="filterConfig()">
+                </div>
+                <div id="configContent">
+                    <div class="loading"></div> Loading configuration...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-message" id="statusMessage">Ready</div>
+        <div>
+            <span id="modifiedCount">0</span> modified settings
+        </div>
+    </div>
+
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Confirm Action</h2>
+            </div>
+            <div class="modal-body" id="modalBody">
+                Are you sure you want to proceed?
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/config.js"></script>
+</body>
+</html>
