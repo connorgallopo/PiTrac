@@ -72,16 +72,44 @@ async function loadConfiguration() {
 // Render category list
 function renderCategories() {
     const categoryList = document.getElementById('categoryList');
-    categoryList.innerHTML = '<li class="category-item active" data-category="all">All Settings</li>';
+    categoryList.innerHTML = '';
     
-    Object.keys(categories).forEach(category => {
-        const li = document.createElement('li');
-        li.className = 'category-item';
-        li.dataset.category = category;
-        li.textContent = category + ` (${categories[category].length})`;
-        li.onclick = () => selectCategory(category);
-        categoryList.appendChild(li);
+    // Ensure Basic category appears first if it exists
+    const categoryOrder = ['Basic'];
+    Object.keys(categories).forEach(cat => {
+        if (cat !== 'Basic') {
+            categoryOrder.push(cat);
+        }
     });
+    
+    // Add "All Settings" option first
+    const allItem = document.createElement('li');
+    allItem.className = 'category-item';
+    allItem.dataset.category = 'all';
+    allItem.textContent = 'All Settings';
+    allItem.onclick = () => selectCategory('all');
+    categoryList.appendChild(allItem);
+    
+    // Add categories in order
+    categoryOrder.forEach(category => {
+        if (categories[category]) {
+            const li = document.createElement('li');
+            li.className = 'category-item';
+            // Make Basic category active by default
+            if (category === 'Basic') {
+                li.classList.add('active');
+            }
+            li.dataset.category = category;
+            li.textContent = category + ` (${categories[category].length})`;
+            li.onclick = () => selectCategory(category);
+            categoryList.appendChild(li);
+        }
+    });
+    
+    // Select Basic category by default
+    if (categories['Basic']) {
+        selectCategory('Basic');
+    }
 }
 
 // Select category
@@ -118,7 +146,11 @@ function renderConfiguration() {
         group.dataset.category = category;
         
         const title = document.createElement('h3');
+        title.className = 'config-group-title';
         title.textContent = category;
+        if (category === 'Basic') {
+            title.innerHTML = category + ' <span style="color: var(--warning);">★</span>';
+        }
         group.appendChild(title);
         
         keys.forEach(key => {
@@ -155,7 +187,7 @@ function createConfigItem(key, value, defaultValue, isModified) {
         .trim();
     
     label.innerHTML = `
-        ${name}
+        <div class="config-label-name">${name}</div>
         <span class="key">${key}</span>
     `;
     item.appendChild(label);
@@ -189,7 +221,16 @@ function createConfigItem(key, value, defaultValue, isModified) {
 
 // Create appropriate input based on value type
 function createInput(key, value) {
-    if (typeof value === 'boolean' || value === "0" || value === "1") {
+    // Handle arrays and complex objects
+    if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
+        const textarea = document.createElement('textarea');
+        textarea.value = JSON.stringify(value, null, 2);
+        textarea.rows = 3;
+        textarea.style.width = '100%';
+        textarea.style.fontFamily = 'Monaco, Menlo, monospace';
+        textarea.style.fontSize = '0.875rem';
+        return textarea;
+    } else if (typeof value === 'boolean' || value === "0" || value === "1") {
         const select = document.createElement('select');
         select.innerHTML = `
             <option value="true" ${value === true || value === "1" ? 'selected' : ''}>True</option>

@@ -320,7 +320,52 @@ class ConfigurationManager:
         Returns:
             Dictionary with category names and their parameters
         """
+        # Define basic settings that should appear first
+        basic_settings = [
+            # System mode
+            "gs_config.modes.kStartInPuttingMode",
+            "gs_config.system.kGolferOrientation",  # right_handed/left_handed
+            
+            # Camera settings
+            "gs_config.cameras.kCamera1Gain",
+            "gs_config.cameras.kCamera2Gain",
+            
+            # Simulator interfaces
+            "gs_config.golf_simulator_interfaces.E6.kE6ConnectAddress",
+            "gs_config.golf_simulator_interfaces.E6.kE6ConnectPort",
+            "gs_config.golf_simulator_interfaces.GSPro.kGSProConnectAddress",
+            "gs_config.golf_simulator_interfaces.GSPro.kGSProConnectPort",
+            
+            # Ball detection basics
+            "gs_config.ball_identification.kBallDetectionMethod",  # legacy/experimental/experimental_sahi
+            "gs_config.ball_identification.kUseCLAHEProcessing",
+            "gs_config.ball_identification.kCLAHEClipLimit",
+            "gs_config.ball_position.kExpectedBallRadiusPixelsAt40cm",
+            
+            # Strobing (LED timing) adjustments
+            "gs_config.strobing.kStandardBallSpeedAdjustmentPercent",
+            "gs_config.strobing.kPracticeBallSpeedAdjustmentPercent",
+            "gs_config.strobing.kPuttingBallSpeedAdjustmentPercent",
+            
+            # Common storage settings
+            "gs_config.system.kLogExposureImages",
+            "gs_config.system.kLogSpinAnalysisImages",
+            "gs_config.system.kLogWebServerImages",
+            "gs_config.system.kUseUniqueFileNames",  # unique_diagnostic_files
+            "gs_config.system.kImageDirectory",
+            "gs_config.system.kWebShareDirectory",
+            
+            # Network
+            "gs_config.ipc_interface.kWebActiveMQHostAddress",
+            "gs_config.ipc_interface.kWebRefreshSeconds",
+            
+            # Spin calculation
+            "gs_config.spin.kSkipSpinCalculation",
+            "gs_config.spin.kWriteCSVFiles",
+        ]
+        
         categories = {
+            "Basic": [],
             "Cameras": [],
             "Simulators": [],
             "Ball Detection": [],
@@ -329,11 +374,14 @@ class ConfigurationManager:
             "Logging": [],
             "Spin Analysis": [],
             "Calibration": [],
-            "Other": []
+            "Advanced": []
         }
         
         def categorize_key(key: str) -> str:
-            if "camera" in key.lower() or "Camera" in key:
+            # Check if it's a basic setting first
+            if key in basic_settings:
+                return "Basic"
+            elif "camera" in key.lower() or "Camera" in key:
                 return "Cameras"
             elif any(x in key for x in ["GSPro", "E6", "golf_simulator"]):
                 return "Simulators"
@@ -350,7 +398,7 @@ class ConfigurationManager:
             elif "calibrat" in key.lower():
                 return "Calibration"
             else:
-                return "Other"
+                return "Advanced"
         
         def extract_keys(d: Dict, prefix: str = "") -> None:
             for key, value in d.items():
