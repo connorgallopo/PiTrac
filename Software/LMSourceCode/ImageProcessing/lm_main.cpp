@@ -1536,7 +1536,7 @@ void run_main(int argc, char* argv[])
 int main(int argc, char *argv[])
 {
     try {
-        golf_sim::setup_signal_handlers();
+        setup_signal_handlers();
         
         if (!GolfSimOptions::GetCommandLineOptions().Parse(argc, argv))
         {
