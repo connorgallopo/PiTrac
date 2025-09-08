@@ -95,10 +95,6 @@ function renderCategories() {
         if (categories[category]) {
             const li = document.createElement('li');
             li.className = 'category-item';
-            // Make Basic category active by default
-            if (category === 'Basic') {
-                li.classList.add('active');
-            }
             li.dataset.category = category;
             li.textContent = category + ` (${categories[category].length})`;
             li.onclick = () => selectCategory(category);
@@ -106,10 +102,14 @@ function renderCategories() {
         }
     });
     
-    // Select Basic category by default
-    if (categories['Basic']) {
-        selectCategory('Basic');
-    }
+    // Select Basic category by default (without adding active class here)
+    setTimeout(() => {
+        if (categories['Basic']) {
+            selectCategory('Basic');
+        } else {
+            selectCategory('all');
+        }
+    }, 100);
 }
 
 // Select category

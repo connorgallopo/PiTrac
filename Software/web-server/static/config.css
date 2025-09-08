@@ -81,14 +81,31 @@
     border-radius: 0.75rem;
     padding: 1.5rem;
     box-shadow: var(--shadow-md);
+    min-height: 500px;
 }
 
 .config-group {
     margin-bottom: 2rem;
+    animation: fadeIn 0.3s ease-out;
 }
 
 .config-group:last-child {
     margin-bottom: 0;
+}
+
+.config-group[style*="display: none"] {
+    animation: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .config-group-title {
@@ -383,7 +400,8 @@
 }
 
 .config-item.modified {
-    background: rgba(237, 137, 54, 0.05);
+    border-left: 3px solid var(--warning);
+    padding-left: calc(1rem - 3px);
 }
 
 .config-label {

@@ -324,7 +324,6 @@ class ConfigurationManager:
         basic_settings = [
             # System mode
             "gs_config.modes.kStartInPuttingMode",
-            "gs_config.system.kGolferOrientation",  # right_handed/left_handed
             
             # Camera settings
             "gs_config.cameras.kCamera1Gain",
@@ -337,31 +336,31 @@ class ConfigurationManager:
             "gs_config.golf_simulator_interfaces.GSPro.kGSProConnectPort",
             
             # Ball detection basics
-            "gs_config.ball_identification.kBallDetectionMethod",  # legacy/experimental/experimental_sahi
             "gs_config.ball_identification.kUseCLAHEProcessing",
             "gs_config.ball_identification.kCLAHEClipLimit",
             "gs_config.ball_position.kExpectedBallRadiusPixelsAt40cm",
             
-            # Strobing (LED timing) adjustments
-            "gs_config.strobing.kStandardBallSpeedAdjustmentPercent",
-            "gs_config.strobing.kPracticeBallSpeedAdjustmentPercent",
-            "gs_config.strobing.kPuttingBallSpeedAdjustmentPercent",
+            # Strobing (LED timing) adjustments - using correct key names
+            "gs_config.strobing.kStandardBallSpeedSlowdownPercentage",
+            "gs_config.strobing.kPracticeBallSpeedSlowdownPercentage",
+            "gs_config.strobing.kPuttingBallSpeedSlowdownPercentage",
             
-            # Common storage settings
-            "gs_config.system.kLogExposureImages",
-            "gs_config.system.kLogSpinAnalysisImages",
-            "gs_config.system.kLogWebServerImages",
-            "gs_config.system.kUseUniqueFileNames",  # unique_diagnostic_files
-            "gs_config.system.kImageDirectory",
-            "gs_config.system.kWebShareDirectory",
+            # Common storage settings - using correct key names
+            "gs_config.system.kLogIntermediateExposureImagesToFile",
+            "gs_config.system.kLogIntermediateSpinImagesToFile",
+            "gs_config.system.kLogWebserverImagesToFile",
+            "gs_config.system.kLogDiagnosticImagesToUniqueFiles",
+            "gs_config.system.kLinuxBaseImageLoggingDir",  # Main image directory
+            "gs_config.ipc_interface.kWebServerShareDirectory",
+            "gs_config.ipc_interface.kWebServerTomcatShareDirectory",
             
             # Network
             "gs_config.ipc_interface.kWebActiveMQHostAddress",
-            "gs_config.ipc_interface.kWebRefreshSeconds",
+            "gs_config.ipc_interface.kRefreshTimeSeconds",  # Fixed key name
             
-            # Spin calculation
-            "gs_config.spin.kSkipSpinCalculation",
-            "gs_config.spin.kWriteCSVFiles",
+            # Spin calculation - using correct key names
+            "gs_config.golf_simulator_interfaces.kSkipSpinCalculation",
+            "gs_config.golf_simulator_interfaces.kWriteSpinAnalysisCsvFiles",
         ]
         
         categories = {
