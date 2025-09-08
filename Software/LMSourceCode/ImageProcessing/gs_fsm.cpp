@@ -10,6 +10,7 @@
 
 #include <variant>
 #include <thread>
+#include <chrono>
 #include "gs_format_lib.h"
 #include <iostream>
 #include <signal.h>
@@ -18,6 +19,7 @@
 
 #include "logging_tools.h"
 #include "worker_thread.h"
+#include "adaptive_stillness_detector.h"
 #include "gs_ipc_message.h"
 #include "gs_options.h"
 #include "golf_ball.h"
@@ -49,7 +51,8 @@ namespace golf_sim {
 
     const int kWaitForBallPauseMs = 500;
     const int kEventLoopPauseMs = 5000;
-    const int kBallStabilizationTime = 1; // seconds
+    static int kBallStabilizationTimeMs = 1000; // milliseconds - configurable from JSON
+    static std::string kStabilizationMethod = "fixed"; // "fixed" or "adaptive"
 
     // This is where the strobed-ball image will be put so that the web interface can display it
     std::string kWebServerCamera2Image;
@@ -84,7 +87,7 @@ namespace golf_sim {
         // queueBallStabilizationCheck();
 
         if (BallStabilizationCheckTimerThread == nullptr) {
-            BallStabilizationCheckTimerThread = new TimedCallbackThread("BallStabilizationCheckTimerThread", kBallStabilizationTime * 1000, queueBallStabilizationCheck);
+            BallStabilizationCheckTimerThread = new TimedCallbackThread("BallStabilizationCheckTimerThread", kBallStabilizationTimeMs, queueBallStabilizationCheck);
             BallStabilizationCheckTimerThread->CreateThread();
         }
     }
@@ -196,10 +199,19 @@ namespace golf_sim {
 
             std::chrono::steady_clock::time_point lastBallAcquisitionTime = std::chrono::steady_clock::now();
 
-            // Schedule the timer for a determined (short) time in the future.  When the timer goes off, an
-            // CheckForBallStable event will be injected
-            // Create a thread that will queue an event-loop queueBallStabilizationCheck in the future
-            setupBallStabilizationCheckTimer();
+            // Schedule stabilization checking based on configured method
+            if (kStabilizationMethod == "adaptive") {
+                // For adaptive mode, immediately queue a check event
+                // The adaptive detector will handle timing internally
+                GolfSimEventElement checkForStable{ new GolfSimEvent::CheckForBallStable{} };
+                GolfSimEventQueue::QueueEvent(checkForStable);
+                GS_LOG_MSG(debug, "Adaptive mode: Queued immediate stabilization check");
+            } else {
+                // Legacy mode: Schedule the timer for a determined time in the future
+                // When the timer goes off, a CheckForBallStable event will be injected
+                setupBallStabilizationCheckTimer();
+                GS_LOG_MSG(debug, "Fixed timer mode: Set " + std::to_string(kBallStabilizationTimeMs) + "ms timer");
+            }
 
             // Let the monitor interface know what's happening
             GsUISystem::SendIPCStatusMessage(GsIPCResultType::kPausingForBallStabilization);
@@ -242,35 +254,92 @@ namespace golf_sim {
 
         GS_LOG_MSG(debug, "GolfSim state transition: WaitingForBallStabilization - Received CheckForBallStableEvent ");
 
+        // Static adaptive detector instance (persists across calls)
+        static AdaptiveStillnessDetector* adaptive_detector = nullptr;
+        static std::string current_method;
+        
+        // Initialize or reinitialize detector if method changed
+        if (kStabilizationMethod != current_method) {
+            if (adaptive_detector) {
+                delete adaptive_detector;
+                adaptive_detector = nullptr;
+            }
+            if (kStabilizationMethod == "adaptive") {
+                adaptive_detector = new AdaptiveStillnessDetector();
+                GS_LOG_MSG(debug, "Created new AdaptiveStillnessDetector");
+            }
+            current_method = kStabilizationMethod;
+        }
+
         GolfBall ball;
         cv::Mat img;
 
         bool found = CheckForBall(ball, img);
         // LoggingTools::LogImage("", img, std::vector < cv::Point >{}, true, "log_last_ball_2bcompared2_still.png");
 
+        bool ball_is_stable = false;
 
-        // We were called by a timer in a separate thread.  Clean up that thread
-        if (BallStabilizationCheckTimerThread != nullptr) {
-            BallStabilizationCheckTimerThread->ExitThread();
-            delete BallStabilizationCheckTimerThread;
-            BallStabilizationCheckTimerThread = nullptr;
+        if (!found) {
+            GS_LOG_MSG(info, "=============== Ball Lost Before Stabilizing - Will look for ball again.");
+            // Reset adaptive detector if ball lost
+            if (adaptive_detector) {
+                adaptive_detector->reset();
+            }
         }
-
-        bool ballMoved = true;
-
-        // If the ball hasn't been found, then whether the ball moved is moot
-        if (found) {
-            ballMoved = ball.CheckIfBallMoved(waitingForBallStabilization.cam1_ball_, 10 /* max center move pixels */, 6 /* % radius change */);
+        else if (kStabilizationMethod == "adaptive" && adaptive_detector) {
+            // Use adaptive detection
+            ball_is_stable = adaptive_detector->isBallStill(ball);
+            
+            if (!ball_is_stable) {
+                // Not stable yet, check again soon
+                GS_LOG_TRACE_MSG(trace, "Adaptive: Ball not stable yet - " + 
+                                adaptive_detector->getStatusString());
+                
+                // Queue another check event after a short interval
+                // Using a shorter timer for adaptive checking
+                std::this_thread::sleep_for(std::chrono::milliseconds(
+                    AdaptiveStillnessDetector::kAdaptiveCheckIntervalMs));
+                
+                GolfSimEventElement checkAgain{ new GolfSimEvent::CheckForBallStable{} };
+                GolfSimEventQueue::QueueEvent(checkAgain);
+                
+                // Stay in current state
+                return waitingForBallStabilization;
+            }
+            
+            // Ball is stable!
+            GS_LOG_MSG(info, "Adaptive: Ball stabilized - " + adaptive_detector->getStatusString());
         }
         else {
-            GS_LOG_MSG(info, "=============== Ball Lost Before Stabilizing - Will look for ball again.");
+            // Legacy fixed-timer method
+            // Clean up timer thread if it exists
+            if (BallStabilizationCheckTimerThread != nullptr) {
+                BallStabilizationCheckTimerThread->ExitThread();
+                delete BallStabilizationCheckTimerThread;
+                BallStabilizationCheckTimerThread = nullptr;
+            }
+            
+            // Check if ball moved using legacy method
+            bool ballMoved = ball.CheckIfBallMoved(waitingForBallStabilization.cam1_ball_, 
+                                                   10 /* max center move pixels */, 
+                                                   6 /* % radius change */);
+            ball_is_stable = !ballMoved;
+            
+            if (!ball_is_stable) {
+                GS_LOG_MSG(info, "=============== Ball Moved Before Stabilizing (legacy check)");
+            }
         }
 
-        // TBD - Perform state transition processing here
+        // If ball not found or not stable, restart the process
+        if (!found || !ball_is_stable) {
+            if (!found || (kStabilizationMethod != "adaptive")) {
+                GS_LOG_MSG(info, "=============== Ball not ready - Will look for ball again.");
+            }
 
-        // If the ball moved, start over by finding it again
-        if (!found || ballMoved) {
-            GS_LOG_MSG(info, "=============== Ball Moved (or was lost) Before Stabilizing - Will look for ball again.");
+            // Reset adaptive detector
+            if (adaptive_detector) {
+                adaptive_detector->reset();
+            }
 
             // This event will cause the WaitingForBall state to begin waiting for the ball to appear teed up again
             GolfSimEventElement beginWaitingForBallPlaced{ new GolfSimEvent::BeginWaitingForBallPlaced{ } };
@@ -402,9 +471,15 @@ namespace golf_sim {
         const GolfSimEvent::BeginWatchingForBallHit& beginWatchingForBallHit) {
         GS_LOG_MSG(debug, "GolfSim state transition: WaitingForBallHit - Received BeginWatchingForBallHit.");
 
-        // TBD - Figure out a better way to time this.  Need to give camera2 a moment to get ready to
-        // receive and process the priming pulses and also probably the ready-to-play message
-        sleep(1);
+        // Give camera2 a brief moment to get ready for priming pulses
+        // With adaptive detection, ball is already stable so we can reduce this delay
+        if (kStabilizationMethod == "adaptive") {
+            // Minimal delay for adaptive mode since we detected stillness quickly
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        } else {
+            // Legacy mode keeps original delay for compatibility
+            sleep(1);
+        }
 
         cv::Mat image;  // Not sure if actually needed
 
@@ -748,7 +823,20 @@ namespace golf_sim {
         GolfSimConfiguration::SetConstant("gs_config.ipc_interface.kMaxCam2ImageReceivedTimeMs", kMaxCam2ImageReceivedTimeMs);
 
         GolfSimConfiguration::SetConstant("gs_config.user_interface.kWebServerCamera2Image", kWebServerCamera2Image);
-        GolfSimConfiguration::SetConstant("gs_config.user_interface.kWebServerLastTeedBallImage", kWebServerLastTeedBallImage);        
+        GolfSimConfiguration::SetConstant("gs_config.user_interface.kWebServerLastTeedBallImage", kWebServerLastTeedBallImage);
+        
+        // Configure ball stabilization parameters
+        GolfSimConfiguration::SetConstant("gs_config.ball_stabilization.kStabilizationMethod", kStabilizationMethod);
+        GolfSimConfiguration::SetConstant("gs_config.ball_stabilization.kBallStabilizationTimeMs", kBallStabilizationTimeMs);
+        
+        // Configure adaptive stillness detector if enabled
+        if (kStabilizationMethod == "adaptive") {
+            AdaptiveStillnessDetector::Configure();
+            GS_LOG_MSG(info, "Using adaptive ball stabilization detection");
+        } else {
+            GS_LOG_MSG(info, "Using fixed timer ball stabilization (" + 
+                       std::to_string(kBallStabilizationTimeMs) + "ms)");
+        }        
         
         GolfSimStateMachine golfSim;
 

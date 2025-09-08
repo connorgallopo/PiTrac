@@ -12,9 +12,9 @@
             "kStartInPuttingMode": "0"
         },
         "ball_identification": {
-            "kDetectionMethod": "legacy",
+            "kDetectionMethod": "experimental_sahi",
             "DETECTION_METHOD_OPTIONS": "legacy=HoughCircles(stable), experimental=ONNX/YOLO(fast), experimental_sahi=ONNX/YOLO+SAHI(accurate)",
-            "kBallPlacementDetectionMethod": "legacy",
+            "kBallPlacementDetectionMethod": "experimental",
             "BALL_PLACEMENT_METHOD_OPTIONS": "legacy=GetCalibratedBall/HoughCircles, experimental=YOLO(fast+accurate)",
             "kONNXModelPath": "../../Software/GroundTruthAnnotator/experiments/high_performance_300e2/weights/best.onnx",
             "kONNXConfidenceThreshold": "0.5",
@@ -96,6 +96,31 @@
             "kPlacedNarrowingStartingParam2": "0.9",
             "kPlacedNarrowingParam1": "300",
             "kPlacedNarrowingRadiiDpParam": "1.5"
+        },
+        "ball_stabilization": {
+            "_COMMENT": "Ball stabilization detection parameters for ready-to-hit detection",
+            "kStabilizationMethod": "adaptive",
+            "_STABILIZATION_METHOD_OPTIONS": "fixed=timer-based(legacy), adaptive=statistical(fast)",
+            "kBallStabilizationTimeMs": "200",
+            "_BALL_STABILIZATION_TIME_COMMENT": "Time in ms for fixed method, or max wait for adaptive",
+            "kAdaptiveMinFrames": "6",
+            "_ADAPTIVE_MIN_FRAMES_COMMENT": "Minimum frames before stillness decision (~100ms at 60fps)",
+            "kAdaptiveMaxFrames": "30",
+            "_ADAPTIVE_MAX_FRAMES_COMMENT": "Maximum history buffer size (~500ms at 60fps)",
+            "kAdaptivePositionThreshold": "0.5",
+            "_POSITION_THRESHOLD_COMMENT": "Position variance threshold in pixels for stillness",
+            "kAdaptiveRadiusThreshold": "0.02",
+            "_RADIUS_THRESHOLD_COMMENT": "Radius coefficient of variation (2% default)",
+            "kAdaptiveMotionThreshold": "0.1",
+            "_MOTION_THRESHOLD_COMMENT": "Motion energy threshold with exponential decay",
+            "kAdaptiveMotionDecayFactor": "0.8",
+            "_DECAY_FACTOR_COMMENT": "Exponential decay factor for older frames (0.8 = 20% decay)",
+            "kAdaptiveDebugLogging": "false",
+            "_DEBUG_LOGGING_COMMENT": "Enable detailed debug output for tuning",
+            "kAdaptiveCheckIntervalMs": "16",
+            "_CHECK_INTERVAL_COMMENT": "Milliseconds between stillness checks (~60fps)",
+            "kAdaptiveUseFastMode": "false",
+            "_FAST_MODE_COMMENT": "Skip some calculations for Raspberry Pi performance"
         },
         "ball_position": {
             "kExpectedBallRadiusPixelsAt40cm": "87",
