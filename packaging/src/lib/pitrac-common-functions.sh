@@ -231,7 +231,7 @@ install_onnx_models() {
                 mkdir -p "$user_models_dir/$experiment_name"
                 cp "$experiment" "$user_models_dir/$experiment_name/best.onnx"
                 log_info "  Installed model: $experiment_name/best.onnx"
-                ((models_found++))
+                models_found=$((models_found + 1))
             fi
         done
         
