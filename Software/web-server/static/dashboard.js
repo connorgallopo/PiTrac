@@ -34,7 +34,7 @@ function initTheme() {
     const savedTheme = localStorage.getItem('pitrac-theme') || 'system';
     currentTheme = savedTheme;
     applyTheme(savedTheme);
-    
+
     // Initialize dropdown menu
     initDropdown();
 }
@@ -42,18 +42,18 @@ function initTheme() {
 function initDropdown() {
     const dropdown = document.querySelector('.dropdown');
     const toggle = document.querySelector('.dropdown-toggle');
-    
+
     if (toggle && dropdown) {
         toggle.addEventListener('click', (e) => {
             e.stopPropagation();
             dropdown.classList.toggle('active');
         });
-        
+
         // Close dropdown when clicking outside
         document.addEventListener('click', () => {
             dropdown.classList.remove('active');
         });
-        
+
         // Prevent dropdown from closing when clicking inside
         const dropdownMenu = document.querySelector('.dropdown-menu');
         if (dropdownMenu) {
@@ -75,7 +75,7 @@ function connectWebSocket() {
     ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
 
     ws.onopen = () => {
-        console.log('WebSocket connected');
+        // WebSocket connected
         document.getElementById('ws-status-dot').classList.remove('disconnected');
     };
 
@@ -85,7 +85,7 @@ function connectWebSocket() {
     };
 
     ws.onclose = () => {
-        console.log('WebSocket disconnected');
+        // WebSocket disconnected
         document.getElementById('ws-status-dot').classList.add('disconnected');
         setTimeout(connectWebSocket, 3000);
     };
@@ -130,7 +130,7 @@ function updateDisplay(data) {
     // Update images - only show images for actual hits, clear for status messages
     const imageGrid = document.getElementById('image-grid');
     const resultType = (data.result_type || '').toLowerCase();
-    
+
     // Only show images for hit results
     if (resultType.includes('hit') && data.images && data.images.length > 0) {
         imageGrid.innerHTML = data.images.map((img, idx) =>
@@ -145,12 +145,12 @@ function updateBallStatus(resultType, message) {
     const indicator = document.getElementById('ball-ready-indicator');
     const statusTitle = document.getElementById('ball-status-title');
     const statusMessage = document.getElementById('ball-status-message');
-    
+
     indicator.classList.remove('initializing', 'waiting', 'stabilizing', 'ready', 'hit', 'error');
-    
+
     if (resultType) {
         const normalizedType = resultType.toLowerCase();
-        
+
         if (normalizedType.includes('initializing')) {
             indicator.classList.add('initializing');
             statusTitle.textContent = 'System Initializing';
@@ -198,7 +198,7 @@ async function resetShot() {
     try {
         const response = await fetch('/api/reset', { method: 'POST' });
         if (response.ok) {
-            console.log('Shot reset');
+            // Shot reset successfully
         }
     } catch (error) {
         console.error('Error resetting shot:', error);
@@ -224,7 +224,7 @@ async function checkSystemStatus() {
             } else {
                 pitracDot.classList.add('disconnected');
             }
-            
+
             const camera2Dot = document.getElementById('pitrac-camera2-status-dot');
             if (camera2Dot && !data.pitrac_running) {
                 camera2Dot.classList.add('disconnected');
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkSystemStatus();
 
     setInterval(checkSystemStatus, 5000);
-    
+
     checkPiTracStatus();
     setInterval(checkPiTracStatus, 5000);
 
@@ -312,13 +312,13 @@ async function checkPiTracStatus() {
         // Camera 2 status (only shown in single-Pi mode)
         const camera2Container = document.getElementById('camera2-status-container');
         const camera2Dot = document.getElementById('pitrac-camera2-status-dot');
-        
+
         if (status.mode === 'single') {
             // Show camera2 indicator in single-Pi mode
             if (camera2Container) {
                 camera2Container.style.display = 'flex';
             }
-            
+
             if (camera2Dot) {
                 if (status.camera2_pid) {
                     camera2Dot.classList.add('connected');
@@ -360,7 +360,7 @@ function updatePiTracButtons(isRunning) {
         restartBtnDesktop.disabled = !isRunning;
         restartBtnDesktop.style.display = isRunning ? 'inline-flex' : 'none';
     }
-    
+
     if (startBtnMobile) {
         startBtnMobile.disabled = isRunning;
         startBtnMobile.style.display = isRunning ? 'none' : 'flex';
@@ -378,7 +378,7 @@ function updatePiTracButtons(isRunning) {
 }
 
 function showStatusMessage(message, type = 'info') {
-    console.log(`[${type.toUpperCase()}] ${message}`);
+    // Status message: [type] message
 
     const statusMessage = document.getElementById('ball-status-message');
     if (statusMessage) {
