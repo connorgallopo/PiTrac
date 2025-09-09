@@ -15,7 +15,7 @@ log_error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
 log_success() { echo -e "${GREEN}[✓]${NC} $*"; }
 
 DEFAULT_BROKER_NAME="localhost"
-DEFAULT_BIND_ADDRESS="127.0.0.1"
+DEFAULT_BIND_ADDRESS="0.0.0.0"
 DEFAULT_PORT="61616"
 DEFAULT_STOMP_PORT="61613"
 DEFAULT_LOG_LEVEL="INFO"

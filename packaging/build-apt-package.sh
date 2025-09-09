@@ -159,6 +159,25 @@ install_test_resources() {
     install_test_images "$DEB_DIR/usr/share/pitrac/test-images" "$REPO_ROOT"
     install_camera_tools "$DEB_DIR/usr/lib/pitrac" "$REPO_ROOT"
     
+    log_info "Staging ONNX models..."
+    local models_dir="$REPO_ROOT/Software/GroundTruthAnnotator/experiments"
+    if [[ -d "$models_dir" ]]; then
+        mkdir -p "$DEB_DIR/usr/share/pitrac/models"
+        local models_found=0
+        for experiment in "$models_dir"/*/weights/best.onnx; do
+            if [[ -f "$experiment" ]]; then
+                local experiment_name=$(basename "$(dirname "$(dirname "$experiment")")")
+                mkdir -p "$DEB_DIR/usr/share/pitrac/models/$experiment_name"
+                cp "$experiment" "$DEB_DIR/usr/share/pitrac/models/$experiment_name/best.onnx"
+                log_info "  Staged model: $experiment_name/best.onnx"
+                ((models_found++))
+            fi
+        done
+        if [[ $models_found -gt 0 ]]; then
+            log_success "Staged $models_found ONNX model(s)"
+        fi
+    fi
+    
     local calib_dir="$REPO_ROOT/Software/CalibrateCameraDistortions"
     if [[ -d "$calib_dir" ]]; then
         cp "$calib_dir/CameraCalibration.py" "$DEB_DIR/usr/share/pitrac/calibration/" 2>/dev/null || true

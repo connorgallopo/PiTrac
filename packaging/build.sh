@@ -409,6 +409,8 @@ build_dev() {
     install_camera_tools "/usr/lib/pitrac" "$REPO_ROOT"
 
     install_test_images "/usr/share/pitrac/test-images" "$REPO_ROOT"
+    
+    install_onnx_models "$REPO_ROOT" "${SUDO_USER:-$(whoami)}"
 
     # Install calibration tools
     log_info "Installing calibration tools..."

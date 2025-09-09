@@ -28,6 +28,17 @@ case "$1" in
         else
             # Add user to required groups
             usermod -a -G video,gpio,i2c,spi,dialout "$ACTUAL_USER" 2>/dev/null || true
+            
+            if [ -f /usr/lib/pitrac/pitrac-common-functions.sh ]; then
+                . /usr/lib/pitrac/pitrac-common-functions.sh
+                if [ -d /usr/share/pitrac/models ]; then
+                    USER_MODELS_DIR="/home/$ACTUAL_USER/LM_Shares/models"
+                    mkdir -p "$USER_MODELS_DIR"
+                    cp -r /usr/share/pitrac/models/* "$USER_MODELS_DIR/" 2>/dev/null || true
+                    chown -R "$ACTUAL_USER:$ACTUAL_USER" "/home/$ACTUAL_USER/LM_Shares"
+                    echo "Installed ONNX models to $USER_MODELS_DIR"
+                fi
+            fi
 
             # Create user directories
             USER_HOME=$(getent passwd "$ACTUAL_USER" | cut -d: -f6)
@@ -168,7 +179,7 @@ case "$1" in
             if [ -x /usr/lib/pitrac/activemq-service-install.sh ]; then
                 echo "Installing ActiveMQ configuration from templates..."
                 export ACTIVEMQ_BROKER_NAME="localhost"
-                export ACTIVEMQ_BIND_ADDRESS="127.0.0.1"
+                export ACTIVEMQ_BIND_ADDRESS="0.0.0.0"
                 export ACTIVEMQ_PORT="61616"
                 export ACTIVEMQ_LOG_LEVEL="INFO"
                 export PITRAC_TEMPLATE_DIR="/usr/share/pitrac/templates"
