@@ -43,6 +43,9 @@ function initWebSocket() {
 // Load configuration from server
 async function loadConfiguration() {
     try {
+        modifiedSettings.clear();
+        updateModifiedCount();
+        
         // Load all configuration data in parallel
         const [configRes, defaultsRes, userRes, categoriesRes, subcategoriesRes, metadataRes] = await Promise.all([
             fetch('/api/config'),
@@ -219,7 +222,6 @@ function renderConfiguration(selectedCategory = null) {
                     const isModified = getNestedValue(userSettings, key) !== undefined;
                     
                     const item = createConfigItem(key, value, defaultValue, isModified);
-                    item.classList.add('basic-setting');
                     group.appendChild(item);
                 });
             } else if (category === 'Basic') {
@@ -230,7 +232,6 @@ function renderConfiguration(selectedCategory = null) {
                     const isModified = getNestedValue(userSettings, key) !== undefined;
                     
                     const item = createConfigItem(key, value, defaultValue, isModified);
-                    item.classList.add('basic-setting');
                     group.appendChild(item);
                 });
             }
@@ -250,7 +251,6 @@ function renderConfiguration(selectedCategory = null) {
                     const isModified = getNestedValue(userSettings, key) !== undefined;
                     
                     const item = createConfigItem(key, value, defaultValue, isModified);
-                    item.classList.add('advanced-setting');
                     group.appendChild(item);
                 });
             }
@@ -301,8 +301,12 @@ function createConfigItem(key, value, defaultValue, isModified) {
     const input = createInput(key, value);
     input.className = 'config-input';
     input.dataset.key = key;
-    input.dataset.original = value;
-    input.onchange = () => handleValueChange(key, input.value);
+    input.dataset.original = String(value);
+    if (input.tagName === 'SELECT') {
+        input.onchange = () => handleValueChange(key, input.value, input.dataset.original);
+    } else {
+        input.oninput = () => handleValueChange(key, input.value, input.dataset.original);
+    }
     inputContainer.appendChild(input);
     item.appendChild(inputContainer);
     
@@ -366,24 +370,37 @@ function createInput(key, value) {
 }
 
 // Handle value change
-async function handleValueChange(key, value) {
+async function handleValueChange(key, currentValue, originalValue) {
     try {
-        // Convert value to appropriate type
-        if (value === 'true') value = true;
-        else if (value === 'false') value = false;
-        else if (!isNaN(value) && value !== '') value = Number(value);
+        let current = currentValue;
+        let original = originalValue;
         
-        // Track as modified
-        modifiedSettings.add(key);
-        updateModifiedCount();
+        if (current === 'true') current = true;
+        else if (current === 'false') current = false;
+        else if (!isNaN(current) && current !== '') current = Number(current);
         
-        // Update UI
+        if (original === 'true') original = true;
+        else if (original === 'false') original = false;
+        else if (!isNaN(original) && original !== '') original = Number(original);
+        
+        const isModified = current !== original;
+        
         const item = document.querySelector(`[data-key="${key}"]`);
         if (item) {
-            item.classList.add('modified');
+            if (isModified) {
+                modifiedSettings.add(key);
+                item.classList.add('modified');
+            } else {
+                modifiedSettings.delete(key);
+                item.classList.remove('modified');
+            }
         }
         
-        updateStatus(`Modified: ${key}`, 'success');
+        updateModifiedCount();
+        
+        if (isModified) {
+            updateStatus(`Modified: ${key}`, 'success');
+        }
     } catch (error) {
         console.error('Failed to handle value change:', error);
         updateStatus('Failed to update value', 'error');
