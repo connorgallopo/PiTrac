@@ -32,23 +32,30 @@ class ConfigurationManager:
         self.user_settings: Dict[str, Any] = {}
         self.merged_config: Dict[str, Any] = {}
 
-        # Track which parameters require restart
-        self.restart_required_params = {
-            "gs_config.cameras.kCamera1Gain",
-            "gs_config.cameras.kCamera2Gain",
-            "gs_config.ipc_interface.kWebActiveMQHostAddress",
-            "gs_config.golf_simulator_interfaces.GSPro.kGSProConnectPort",
-            "gs_config.golf_simulator_interfaces.E6.kE6ConnectPort",
-        }
+        self.restart_required_params = self._load_restart_required_params()
 
         # Load configurations
         self.reload()
+
+    def _load_restart_required_params(self) -> set:
+        """Load parameters that require restart from configurations.json metadata"""
+        metadata = self.load_configurations_metadata()
+        settings_metadata = metadata.get("settings", {})
+
+        restart_params = set()
+        for key, setting_info in settings_metadata.items():
+            if setting_info.get("requiresRestart", False):
+                restart_params.add(key)
+
+        logger.info(f"Loaded {len(restart_params)} parameters that require restart")
+        return restart_params
 
     def reload(self) -> None:
         """Reload all configuration files"""
         self.system_config = self._load_json(self.system_config_path)
         self.user_settings = self._load_json(self.user_settings_path)
         self.merged_config = self._merge_configs()
+        self.restart_required_params = self._load_restart_required_params()
         logger.info(f"Loaded configuration: {len(self.user_settings)} user overrides")
 
     def _load_json(self, path: Path) -> Dict[str, Any]:

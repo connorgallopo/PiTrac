@@ -29,7 +29,7 @@ class PiTracProcessManager:
         self.camera2_log_file = Path.home() / ".pitrac" / "logs" / "pitrac_camera2.log"
         self.pid_file = Path.home() / ".pitrac" / "run" / "pitrac.pid"
         self.camera2_pid_file = Path.home() / ".pitrac" / "run" / "pitrac_camera2.pid"
-        
+
         # Use provided config manager or create new one
         self.config_manager = config_manager or ConfigurationManager()
 
@@ -41,33 +41,38 @@ class PiTracProcessManager:
         """Load PiTrac configuration from JSON config manager"""
         # Get the merged configuration from our config manager
         config = self.config_manager.get_config()
-        
+
         # Transform flat JSON keys to nested structure for compatibility
         transformed = {
             "system": {
                 "mode": config.get("system.mode", "single"),
-                "camera_role": config.get("system.camera_role", "camera1")
+                "camera_role": config.get("system.camera_role", "camera1"),
             },
-            "logging": {
-                "level": config.get("logging.level", "info")
-            },
+            "logging": {"level": config.get("logging.level", "info")},
             "network": {
-                "broker_address": config.get("gs_config.ipc_interface.kWebActiveMQHostAddress", "tcp://localhost:61616")
+                "broker_address": config.get(
+                    "gs_config.ipc_interface.kWebActiveMQHostAddress",
+                    "tcp://localhost:61616",
+                )
             },
             "storage": {
                 "image_dir": config.get("storage.image_dir"),
-                "web_share_dir": config.get("storage.web_share_dir")
+                "web_share_dir": config.get("storage.web_share_dir"),
             },
             "simulators": {
-                "e6_host": config.get("gs_config.golf_simulator_interfaces.E6.kE6ConnectAddress"),
-                "gspro_host": config.get("gs_config.golf_simulator_interfaces.GSPro.kGSProConnectAddress")
+                "e6_host": config.get(
+                    "gs_config.golf_simulator_interfaces.E6.kE6ConnectAddress"
+                ),
+                "gspro_host": config.get(
+                    "gs_config.golf_simulator_interfaces.GSPro.kGSProConnectAddress"
+                ),
             },
             "cameras": {
                 "camera1_gain": config.get("gs_config.cameras.kCamera1Gain", 1.0),
-                "camera2_gain": config.get("gs_config.cameras.kCamera2Gain", 4.0)
-            }
+                "camera2_gain": config.get("gs_config.cameras.kCamera2Gain", 4.0),
+            },
         }
-        
+
         return transformed
 
     def _build_command(self, camera: str = "camera1") -> list:
@@ -133,6 +138,47 @@ class PiTracProcessManager:
             cmd.append(f"--camera_gain={cameras_config['camera1_gain']}")
         elif camera == "camera2" and "camera2_gain" in cameras_config:
             cmd.append(f"--camera_gain={cameras_config['camera2_gain']}")
+
+        # CLI-based configurations
+        merged_config = self.config_manager.get_config()
+
+        golfer_orientation = (
+            merged_config.get("gs_config", {})
+            .get("player", {})
+            .get("kGolferOrientation")
+        )
+        if golfer_orientation:
+            cmd.append(f"--golfer_orientation={golfer_orientation}")
+
+        use_practice_balls = (
+            merged_config.get("gs_config", {})
+            .get("player", {})
+            .get("kUsePracticeBalls")
+        )
+        if use_practice_balls:
+            cmd.append("--practice_ball")
+
+        artifact_save_level = (
+            merged_config.get("gs_config", {})
+            .get("logging", {})
+            .get("kArtifactSaveLevel")
+        )
+        if artifact_save_level:
+            cmd.append(f"--artifact_save_level={artifact_save_level}")
+
+        show_debug_images = (
+            merged_config.get("gs_config", {}).get("debug", {}).get("kShowDebugImages")
+        )
+        if show_debug_images:
+            cmd.append("--show_images")
+
+        wait_for_key = (
+            merged_config.get("gs_config", {})
+            .get("debug", {})
+            .get("kWaitForKeyOnImages")
+        )
+        if wait_for_key:
+            cmd.append("--wait_keys")
 
         logger.info(f"Built command: {' '.join(cmd)}")
         return cmd

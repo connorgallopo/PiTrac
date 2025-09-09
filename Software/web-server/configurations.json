@@ -12,6 +12,73 @@
       "default": false,
       "requiresRestart": false
     },
+    "gs_config.player.kGolferOrientation": {
+      "category": "System",
+      "showInBasic": true,
+      "basicSubcategory": "System",
+      "displayName": "Golfer Orientation",
+      "description": "Golfer handedness - affects ball detection and swing analysis (CLI parameter)",
+      "type": "select",
+      "options": {
+        "right_handed": "Right Handed",
+        "left_handed": "Left Handed"
+      },
+      "default": "right_handed",
+      "requiresRestart": true,
+      "passedVia": "cli",
+      "cliArgument": "--golfer_orientation"
+    },
+    "gs_config.player.kUsePracticeBalls": {
+      "category": "System",
+      "showInBasic": true,
+      "basicSubcategory": "System",
+      "displayName": "Practice Ball Mode",
+      "description": "Enable for lightweight practice/foam balls - adjusts detection parameters (CLI parameter)",
+      "type": "boolean",
+      "default": false,
+      "requiresRestart": true,
+      "passedVia": "cli",
+      "cliArgument": "--practice_ball"
+    },
+    "gs_config.logging.kArtifactSaveLevel": {
+      "category": "Logging",
+      "showInBasic": true,
+      "basicSubcategory": "Storage",
+      "displayName": "Diagnostic Image Level",
+      "description": "Control how many diagnostic images are saved (CLI parameter)",
+      "type": "select",
+      "options": {
+        "none": "None - No images saved",
+        "final_results_only": "Final Results Only - Save key images",
+        "all": "All - Save all intermediate images (may slow system)"
+      },
+      "default": "final_results_only",
+      "requiresRestart": true,
+      "passedVia": "cli",
+      "cliArgument": "--artifact_save_level"
+    },
+    "gs_config.debug.kShowDebugImages": {
+      "category": "Advanced",
+      "showInBasic": false,
+      "displayName": "Show Debug Images",
+      "description": "Display debug/trace images on screen for troubleshooting (CLI parameter)",
+      "type": "boolean",
+      "default": false,
+      "requiresRestart": true,
+      "passedVia": "cli",
+      "cliArgument": "--show_images"
+    },
+    "gs_config.debug.kWaitForKeyOnImages": {
+      "category": "Advanced",
+      "showInBasic": false,
+      "displayName": "Pause on Debug Images",
+      "description": "Wait for keypress after showing debug images (CLI parameter)",
+      "type": "boolean",
+      "default": false,
+      "requiresRestart": true,
+      "passedVia": "cli",
+      "cliArgument": "--wait_keys"
+    },
     "gs_config.ball_identification.kDetectionMethod": {
       "category": "Ball Detection",
       "showInBasic": true,
