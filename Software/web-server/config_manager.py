@@ -7,6 +7,7 @@ Handles reading and writing JSON configuration files with a two-tier system:
 
 import json
 import logging
+import os
 import shutil
 from datetime import datetime
 from pathlib import Path
