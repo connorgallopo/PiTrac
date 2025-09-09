@@ -329,6 +329,22 @@ function createConfigItem(key, value, defaultValue, isModified) {
 
 // Create appropriate input based on value type
 function createInput(key, value) {
+    const metadata = configMetadata[key] || {};
+    
+    if (metadata.type === 'select' && metadata.options) {
+        const select = document.createElement('select');
+        Object.entries(metadata.options).forEach(([optValue, optDisplay]) => {
+            const option = document.createElement('option');
+            option.value = optValue;
+            option.textContent = optDisplay;
+            if (value === optValue) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+        return select;
+    }
+    
     // Handle arrays and complex objects
     if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
         const textarea = document.createElement('textarea');

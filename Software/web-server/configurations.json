@@ -45,10 +45,11 @@
       "category": "AI Detection",
       "showInBasic": true,
       "basicSubcategory": "Detection Methods",
-      "displayName": "ONNX Model Path",
-      "description": "Path to YOLO model file for AI detection",
-      "type": "path",
-      "default": "../../Software/GroundTruthAnnotator/experiments/high_performance_300e2/weights/best.onnx",
+      "displayName": "AI Model",
+      "description": "Select YOLO model for AI-based ball detection",
+      "type": "select",
+      "options": {},
+      "default": "~/LM_Shares/models/high_performance_300e2/best.onnx",
       "requiresRestart": true
     },
     "gs_config.cameras.kCamera1Gain": {
