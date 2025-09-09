@@ -120,6 +120,49 @@
     border-bottom: 2px solid var(--border-color);
 }
 
+.config-section-header {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.config-section-header:first-of-type {
+    margin-top: 0;
+}
+
+.config-section-header .section-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    padding: 0.25rem 0.75rem;
+    background: var(--bg-hover);
+    border-radius: 0.25rem;
+}
+
+.config-item.basic-setting {
+    background: rgba(74, 222, 128, 0.05);
+    border-left: 3px solid var(--success);
+    padding-left: calc(1rem - 3px);
+}
+
+.config-item.basic-setting:hover {
+    background: rgba(74, 222, 128, 0.1);
+}
+
+.config-item.basic-setting.modified {
+    border-left-color: var(--warning);
+    background: rgba(251, 191, 36, 0.05);
+}
+
+.config-item.basic-setting.modified:hover {
+    background: rgba(251, 191, 36, 0.1);
+}
+
 /* Dropdown Menu Styles */
 .dropdown {
     position: relative;

@@ -177,8 +177,23 @@ function renderConfiguration(selectedCategory = null) {
             content.appendChild(group);
         });
     } else {
-        // Regular category rendering
         Object.entries(categories).forEach(([category, keys]) => {
+            if (selectedCategory && selectedCategory !== 'all' && selectedCategory !== category) {
+                return;
+            }
+            
+            const basicKeys = [];
+            const advancedKeys = [];
+            
+            keys.forEach(key => {
+                const metadata = configMetadata[key] || {};
+                if (metadata.showInBasic) {
+                    basicKeys.push(key);
+                } else {
+                    advancedKeys.push(key);
+                }
+            });
+            
             const group = document.createElement('div');
             group.className = 'config-group';
             group.dataset.category = category;
@@ -191,14 +206,54 @@ function renderConfiguration(selectedCategory = null) {
             }
             group.appendChild(title);
             
-            keys.forEach(key => {
-                const value = getNestedValue(currentConfig, key);
-                const defaultValue = getNestedValue(defaultConfig, key);
-                const isModified = getNestedValue(userSettings, key) !== undefined;
+            // Render basic settings first (if any)
+            if (basicKeys.length > 0 && category !== 'Basic') {
+                const basicHeader = document.createElement('div');
+                basicHeader.className = 'config-section-header';
+                basicHeader.innerHTML = '<span class="section-label">Essential Settings</span>';
+                group.appendChild(basicHeader);
                 
-                const item = createConfigItem(key, value, defaultValue, isModified);
-                group.appendChild(item);
-            });
+                basicKeys.forEach(key => {
+                    const value = getNestedValue(currentConfig, key);
+                    const defaultValue = getNestedValue(defaultConfig, key);
+                    const isModified = getNestedValue(userSettings, key) !== undefined;
+                    
+                    const item = createConfigItem(key, value, defaultValue, isModified);
+                    item.classList.add('basic-setting');
+                    group.appendChild(item);
+                });
+            } else if (category === 'Basic') {
+                // For Basic category, all settings are basic by definition
+                keys.forEach(key => {
+                    const value = getNestedValue(currentConfig, key);
+                    const defaultValue = getNestedValue(defaultConfig, key);
+                    const isModified = getNestedValue(userSettings, key) !== undefined;
+                    
+                    const item = createConfigItem(key, value, defaultValue, isModified);
+                    item.classList.add('basic-setting');
+                    group.appendChild(item);
+                });
+            }
+            
+            // Render advanced settings (if any and not in Basic category)
+            if (advancedKeys.length > 0 && category !== 'Basic') {
+                if (basicKeys.length > 0) {
+                    const advancedHeader = document.createElement('div');
+                    advancedHeader.className = 'config-section-header';
+                    advancedHeader.innerHTML = '<span class="section-label">Advanced Settings</span>';
+                    group.appendChild(advancedHeader);
+                }
+                
+                advancedKeys.forEach(key => {
+                    const value = getNestedValue(currentConfig, key);
+                    const defaultValue = getNestedValue(defaultConfig, key);
+                    const isModified = getNestedValue(userSettings, key) !== undefined;
+                    
+                    const item = createConfigItem(key, value, defaultValue, isModified);
+                    item.classList.add('advanced-setting');
+                    group.appendChild(item);
+                });
+            }
             
             content.appendChild(group);
         });
