@@ -120,7 +120,7 @@ function updateDisplay(data) {
     // document.getElementById('message').textContent = data.message || '';
 
     // Update ball ready status indicator
-    updateBallStatus(data.result_type, data.message);
+    updateBallStatus(data.result_type, data.message, data.pitrac_running);
 
     if (data.timestamp) {
         const date = new Date(data.timestamp);
@@ -141,12 +141,19 @@ function updateDisplay(data) {
     }
 }
 
-function updateBallStatus(resultType, message) {
+function updateBallStatus(resultType, message, isPiTracRunning) {
     const indicator = document.getElementById('ball-ready-indicator');
     const statusTitle = document.getElementById('ball-status-title');
     const statusMessage = document.getElementById('ball-status-message');
 
     indicator.classList.remove('initializing', 'waiting', 'stabilizing', 'ready', 'hit', 'error');
+
+    if (isPiTracRunning === false) {
+        indicator.classList.add('error');
+        statusTitle.textContent = 'System Stopped';
+        statusMessage.textContent = 'PiTrac is not running - click Start to begin';
+        return;
+    }
 
     if (resultType) {
         const normalizedType = resultType.toLowerCase();
@@ -255,10 +262,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function controlPiTrac(action) {
-    const button = document.getElementById(`pitrac-${action}-btn`);
-    if (button) {
-        button.disabled = true;
-        button.classList.add('loading');
+    const desktopButton = document.getElementById(`pitrac-${action}-btn-desktop`);
+    const mobileButton = document.getElementById(`pitrac-${action}-btn-mobile`);
+
+    if (desktopButton) {
+        desktopButton.disabled = true;
+        desktopButton.classList.add('loading');
+    }
+    if (mobileButton) {
+        mobileButton.disabled = true;
+        mobileButton.classList.add('loading');
     }
 
     try {
@@ -281,9 +294,13 @@ async function controlPiTrac(action) {
         console.error(`Failed to ${action} PiTrac:`, error);
         showStatusMessage(`Failed to ${action} PiTrac: ${error.message}`, 'error');
     } finally {
-        if (button) {
-            button.disabled = false;
-            button.classList.remove('loading');
+        if (desktopButton) {
+            desktopButton.disabled = false;
+            desktopButton.classList.remove('loading');
+        }
+        if (mobileButton) {
+            mobileButton.disabled = false;
+            mobileButton.classList.remove('loading');
         }
     }
 }
@@ -294,6 +311,10 @@ async function checkPiTracStatus() {
         const status = await response.json();
 
         updatePiTracButtons(status.running);
+
+        if (!status.running) {
+            updateBallStatus(null, null, false);
+        }
 
         // Camera 1 status
         const statusDot = document.getElementById('pitrac-status-dot');
@@ -342,9 +363,13 @@ async function checkPiTracStatus() {
 }
 
 function updatePiTracButtons(isRunning) {
-    const startBtn = document.getElementById('pitrac-start-btn');
-    const stopBtn = document.getElementById('pitrac-stop-btn');
-    const restartBtn = document.getElementById('pitrac-restart-btn');
+    const startBtnDesktop = document.getElementById('pitrac-start-btn-desktop');
+    const stopBtnDesktop = document.getElementById('pitrac-stop-btn-desktop');
+    const restartBtnDesktop = document.getElementById('pitrac-restart-btn-desktop');
+
+    const startBtnMobile = document.getElementById('pitrac-start-btn-mobile');
+    const stopBtnMobile = document.getElementById('pitrac-stop-btn-mobile');
+    const restartBtnMobile = document.getElementById('pitrac-restart-btn-mobile');
 
     if (startBtnDesktop) {
         startBtnDesktop.disabled = isRunning;
