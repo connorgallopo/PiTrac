@@ -346,19 +346,34 @@ function updatePiTracButtons(isRunning) {
     const stopBtn = document.getElementById('pitrac-stop-btn');
     const restartBtn = document.getElementById('pitrac-restart-btn');
 
-    if (startBtn) {
-        startBtn.disabled = isRunning;
-        startBtn.style.display = isRunning ? 'none' : 'inline-flex';
+    if (startBtnDesktop) {
+        startBtnDesktop.disabled = isRunning;
+        startBtnDesktop.style.display = isRunning ? 'none' : 'inline-flex';
     }
 
-    if (stopBtn) {
-        stopBtn.disabled = !isRunning;
-        stopBtn.style.display = isRunning ? 'inline-flex' : 'none';
+    if (stopBtnDesktop) {
+        stopBtnDesktop.disabled = !isRunning;
+        stopBtnDesktop.style.display = isRunning ? 'inline-flex' : 'none';
     }
 
-    if (restartBtn) {
-        restartBtn.disabled = !isRunning;
-        restartBtn.style.display = isRunning ? 'inline-flex' : 'none';
+    if (restartBtnDesktop) {
+        restartBtnDesktop.disabled = !isRunning;
+        restartBtnDesktop.style.display = isRunning ? 'inline-flex' : 'none';
+    }
+    
+    if (startBtnMobile) {
+        startBtnMobile.disabled = isRunning;
+        startBtnMobile.style.display = isRunning ? 'none' : 'flex';
+    }
+
+    if (stopBtnMobile) {
+        stopBtnMobile.disabled = !isRunning;
+        stopBtnMobile.style.display = isRunning ? 'flex' : 'none';
+    }
+
+    if (restartBtnMobile) {
+        restartBtnMobile.disabled = !isRunning;
+        restartBtnMobile.style.display = isRunning ? 'flex' : 'none';
     }
 }
 
