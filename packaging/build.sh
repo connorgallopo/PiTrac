@@ -508,18 +508,82 @@ EOF
         exit 1
     fi
 
-    # Install systemd services (optional)
-    log_info "Installing systemd services..."
+    # Clean up old PiTrac systemd service and processes if they exist
+    log_info "Checking for existing PiTrac systemd service and processes..."
+    
+    # Check if old service exists and is running
+    if systemctl list-unit-files | grep -q "pitrac.service"; then
+        log_warn "Found existing pitrac.service - will clean it up as PiTrac is now managed via web interface"
+        
+        # Stop the service if it's running
+        if systemctl is-active --quiet pitrac.service; then
+            log_info "Stopping pitrac.service..."
+            systemctl stop pitrac.service || true
+            sleep 2
+        fi
+        
+        # Disable the service
+        log_info "Disabling pitrac.service..."
+        systemctl disable pitrac.service 2>/dev/null || true
+        
+        # Remove the service files from all possible locations
+        log_info "Removing service files..."
+        rm -f /etc/systemd/system/pitrac.service
+        rm -f /lib/systemd/system/pitrac.service
+        rm -f /usr/lib/systemd/system/pitrac.service
+        
+        # Reload systemd
+        systemctl daemon-reload
+        
+        log_success "Old pitrac.service removed successfully"
+    fi
+    
+    # Kill any lingering pitrac_lm processes (these might be holding GPIO/SPI resources)
+    if pgrep -x "pitrac_lm" > /dev/null; then
+        log_warn "Found running pitrac_lm processes - cleaning them up..."
+        
+        # First try graceful termination
+        pkill -TERM pitrac_lm 2>/dev/null || true
+        sleep 2
+        
+        # If still running, force kill
+        if pgrep -x "pitrac_lm" > /dev/null; then
+            log_info "Force killing remaining pitrac_lm processes..."
+            pkill -9 pitrac_lm 2>/dev/null || true
+            sleep 1
+        fi
+        
+        log_success "Cleaned up old pitrac_lm processes"
+    fi
+    
+    # Clean up PID and lock files
+    log_info "Cleaning up PID/lock files..."
+    rm -f /var/run/pitrac/*.pid 2>/dev/null || true
+    rm -f /var/run/pitrac/*.lock 2>/dev/null || true
+    rm -f "${HOME}/.pitrac/run"/*.pid 2>/dev/null || true
+    rm -f "${HOME}/.pitrac/run"/*.lock 2>/dev/null || true
+    if [[ -n "${SUDO_USER}" ]]; then
+        rm -f "/home/${SUDO_USER}/.pitrac/run"/*.pid 2>/dev/null || true
+        rm -f "/home/${SUDO_USER}/.pitrac/run"/*.lock 2>/dev/null || true
+    fi
+    
+    # Reset GPIO if possible (GPIO 25 is used by PiTrac for pulse strobe)
+    log_info "Attempting to reset GPIO resources..."
+    if [ -d "/sys/class/gpio/gpio25" ]; then
+        echo "25" | tee /sys/class/gpio/unexport > /dev/null 2>&1 || true
+    fi
+    
+    # Give the system a moment to release resources
+    sleep 1
+    
+    log_info "Installing web server and ActiveMQ services..."
     
     mkdir -p /usr/share/pitrac/templates
-    cp "$SCRIPT_DIR/templates/pitrac.service.template" /usr/share/pitrac/templates/
     cp "$SCRIPT_DIR/templates/pitrac-web.service.template" /usr/share/pitrac/templates/
     cp "$SCRIPT_DIR/templates/activemq.xml.template" /usr/share/pitrac/templates/ 2>/dev/null || true
     cp "$SCRIPT_DIR/templates/log4j2.properties.template" /usr/share/pitrac/templates/ 2>/dev/null || true
     cp "$SCRIPT_DIR/templates/activemq-options.template" /usr/share/pitrac/templates/ 2>/dev/null || true
     
-    cp "$SCRIPT_DIR/src/lib/pitrac-service-install.sh" /usr/lib/pitrac/
-    chmod 755 /usr/lib/pitrac/pitrac-service-install.sh
     
     if [[ -f "$SCRIPT_DIR/src/lib/activemq-service-install.sh" ]]; then
         cp "$SCRIPT_DIR/src/lib/activemq-service-install.sh" /usr/lib/pitrac/
@@ -537,8 +601,6 @@ EOF
     fi
     
     INSTALL_USER="${SUDO_USER:-$(whoami)}"
-    log_info "Installing PiTrac service for user: $INSTALL_USER"
-    /usr/lib/pitrac/pitrac-service-install.sh install "$INSTALL_USER"
 
     # Install Python web server (always update)
     log_info "Installing/Updating PiTrac web server..."
@@ -588,17 +650,29 @@ EOF
     echo "  Configs: /etc/pitrac/"
     echo "  Web Server: /usr/lib/pitrac/web-server (updated)"
     echo ""
-    echo "You can now run:"
-    echo "  pitrac test quick   # Test image processing"
-    echo "  pitrac run          # Start tracking (requires cameras)"
-    echo "  pitrac help         # Show all commands"
     echo ""
     echo "Web server status:"
     if systemctl is-active --quiet pitrac-web.service; then
-        echo "  Service is running. Access at http://$(hostname -I | cut -d' ' -f1):8080"
+        echo "  Web service is running"
+        echo "  Access dashboard at: http://$(hostname -I | cut -d' ' -f1):8080"
+        echo "  Use the Start/Stop buttons in the dashboard to control PiTrac"
     else
-        echo "  Service is not running. Start with: sudo systemctl start pitrac-web.service"
+        echo "  Web service is not running"
+        echo "  Start with: sudo systemctl start pitrac-web.service"
+        echo "  Enable on boot: sudo systemctl enable pitrac-web.service"
     fi
+    echo ""
+    echo "ActiveMQ status:"
+    if systemctl is-active --quiet activemq; then
+        echo "  ActiveMQ broker is running on port 61616"
+    else
+        echo "  ActiveMQ is not running"
+        echo "  Start with: sudo systemctl start activemq"
+    fi
+    echo ""
+    echo "Manual testing (optional):"
+    echo "  pitrac test quick   # Test image processing locally"
+    echo "  pitrac help         # Show CLI commands"
     echo ""
     echo "To rebuild after code changes:"
     echo "  sudo ./build.sh dev         # Fast incremental build (only changed files)"

@@ -23,6 +23,7 @@ from listeners import ActiveMQListener
 from managers import ConnectionManager, ShotDataStore
 from parsers import ShotDataParser
 from config_manager import ConfigurationManager
+from pitrac_manager import PiTracProcessManager
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,7 @@ class PiTracServer:
         self.shot_store = ShotDataStore()
         self.parser = ShotDataParser()
         self.config_manager = ConfigurationManager()
+        self.pitrac_manager = PiTracProcessManager(self.config_manager)
         self.mq_conn: Optional[stomp.Connection] = None
         self.listener: Optional[ActiveMQListener] = None
         self.reconnect_task: Optional[asyncio.Task] = None
@@ -277,6 +279,33 @@ class PiTracServer:
             except Exception as e:
                 logger.error(f"Failed to import config: {e}")
                 return {"error": str(e)}
+        
+        # PiTrac process management endpoints
+        @self.app.post("/api/pitrac/start")
+        async def start_pitrac() -> Dict[str, Any]:
+            """Start the PiTrac launch monitor process"""
+            result = await self.pitrac_manager.start()
+            logger.info(f"PiTrac start request: {result}")
+            return result
+        
+        @self.app.post("/api/pitrac/stop")
+        async def stop_pitrac() -> Dict[str, Any]:
+            """Stop the PiTrac launch monitor process"""
+            result = await self.pitrac_manager.stop()
+            logger.info(f"PiTrac stop request: {result}")
+            return result
+        
+        @self.app.post("/api/pitrac/restart")
+        async def restart_pitrac() -> Dict[str, Any]:
+            """Restart the PiTrac launch monitor process"""
+            result = await self.pitrac_manager.restart()
+            logger.info(f"PiTrac restart request: {result}")
+            return result
+        
+        @self.app.get("/api/pitrac/status")
+        async def pitrac_status() -> Dict[str, Any]:
+            """Get the status of the PiTrac launch monitor process"""
+            return self.pitrac_manager.get_status()
     
     def _load_config(self) -> Dict[str, Any]:
         if not CONFIG_FILE.exists():
