@@ -65,7 +65,15 @@ class PiTracServer:
         @self.app.get("/", response_class=HTMLResponse)
         async def dashboard(request: Request) -> Response:
             return self.templates.TemplateResponse(
-                "dashboard.html",
+                "base.html",
+                {"request": request, "shot": self.shot_store.get().to_dict()},
+            )
+
+        @self.app.get("/golf", response_class=HTMLResponse)
+        async def golf_dashboard(request: Request) -> Response:
+            """Serve the professional golf launch monitor dashboard"""
+            return self.templates.TemplateResponse(
+                "golf_dashboard.html",
                 {"request": request, "shot": self.shot_store.get().to_dict()},
             )
 

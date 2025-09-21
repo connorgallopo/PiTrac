@@ -1,0 +1,359 @@
+{% extends "base_modern.html" %}
+
+{% block title %}PiTrac Dashboard - Launch Monitor{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ball status animations */
+    @keyframes ballPulse {
+        0%, 100% { opacity: 0.4; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.1); }
+    }
+    
+    .ball-ready-active {
+        animation: ballPulse 2s ease-in-out infinite;
+    }
+    
+    /* Custom metric card styling */
+    .metric-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    /* Shot image gallery */
+    .shot-image {
+        transition: transform 0.3s ease;
+    }
+    
+    .shot-image:hover {
+        transform: scale(1.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Ball Status Alert -->
+<div class="alert mb-6" id="ball-ready-indicator">
+    <div class="flex items-center gap-3">
+        <div id="ball-status-icon" class="avatar avatar-placeholder">
+            <div class="size-12 rounded-full bg-info/20 text-info ball-ready-active">
+                <i class="ti ti-golf text-2xl"></i>
+            </div>
+        </div>
+        <div class="flex-1">
+            <h4 class="font-semibold" id="ball-status-title">System Status</h4>
+            <p class="text-sm text-base-content/70" id="ball-status-message">Initializing launch monitor...</p>
+        </div>
+        <div class="flex gap-2">
+            <div class="badge badge-info badge-sm">Ready</div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Metrics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <!-- Ball Speed Card -->
+    <div class="card metric-card shadow-lg">
+        <div class="card-body">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-base-content/60 mb-1">Ball Speed</h3>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-3xl font-bold text-primary" id="speed">{{ shot.speed }}</span>
+                        <span class="text-sm text-base-content/60">mph</span>
+                    </div>
+                </div>
+                <div class="avatar avatar-placeholder">
+                    <div class="size-10 rounded-lg bg-primary/10 text-primary">
+                        <i class="ti ti-activity text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="progress bg-primary/10 h-2">
+                    <div class="progress-bar progress-primary" style="width: 75%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Carry Distance Card -->
+    <div class="card metric-card shadow-lg">
+        <div class="card-body">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-base-content/60 mb-1">Carry Distance</h3>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-3xl font-bold text-success" id="carry">{{ shot.carry }}</span>
+                        <span class="text-sm text-base-content/60">yds</span>
+                    </div>
+                </div>
+                <div class="avatar avatar-placeholder">
+                    <div class="size-10 rounded-lg bg-success/10 text-success">
+                        <i class="ti ti-target-arrow text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="progress bg-success/10 h-2">
+                    <div class="progress-bar progress-success" style="width: 60%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Launch Angle Card -->
+    <div class="card metric-card shadow-lg">
+        <div class="card-body">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-base-content/60 mb-1">Launch Angle</h3>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-3xl font-bold text-info" id="launch_angle">{{ shot.launch_angle }}</span>
+                        <span class="text-sm text-base-content/60">°</span>
+                    </div>
+                </div>
+                <div class="avatar avatar-placeholder">
+                    <div class="size-10 rounded-lg bg-info/10 text-info">
+                        <i class="ti ti-trending-up text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-base-content/60">Optimal: 12-15°</span>
+                    <span class="badge badge-info badge-sm">Good</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Side Angle Card -->
+    <div class="card metric-card shadow-lg">
+        <div class="card-body">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-base-content/60 mb-1">Side Angle</h3>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-3xl font-bold text-warning" id="side_angle">{{ shot.side_angle }}</span>
+                        <span class="text-sm text-base-content/60">°</span>
+                    </div>
+                </div>
+                <div class="avatar avatar-placeholder">
+                    <div class="size-10 rounded-lg bg-warning/10 text-warning">
+                        <i class="ti ti-arrows-left-right text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-base-content/60">Direction</span>
+                    <span class="badge badge-warning badge-sm">Left</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back Spin Card -->
+    <div class="card metric-card shadow-lg">
+        <div class="card-body">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-base-content/60 mb-1">Back Spin</h3>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-3xl font-bold text-error" id="back_spin">{{ shot.back_spin }}</span>
+                        <span class="text-sm text-base-content/60">rpm</span>
+                    </div>
+                </div>
+                <div class="avatar avatar-placeholder">
+                    <div class="size-10 rounded-lg bg-error/10 text-error">
+                        <i class="ti ti-rotate-clockwise text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="progress bg-error/10 h-2">
+                    <div class="progress-bar progress-error" style="width: 40%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Side Spin Card -->
+    <div class="card metric-card shadow-lg">
+        <div class="card-body">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h3 class="text-sm font-medium text-base-content/60 mb-1">Side Spin</h3>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-3xl font-bold text-secondary" id="side_spin">{{ shot.side_spin }}</span>
+                        <span class="text-sm text-base-content/60">rpm</span>
+                    </div>
+                </div>
+                <div class="avatar avatar-placeholder">
+                    <div class="size-10 rounded-lg bg-secondary/10 text-secondary">
+                        <i class="ti ti-rotate-2 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-base-content/60">Spin Axis</span>
+                    <span class="badge badge-secondary badge-sm">Draw</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Summary -->
+<div class="stats shadow-lg w-full mb-6">
+    <div class="stat">
+        <div class="stat-figure text-primary">
+            <i class="ti ti-chart-line text-3xl"></i>
+        </div>
+        <div class="stat-title">Total Distance</div>
+        <div class="stat-value text-primary">265</div>
+        <div class="stat-desc">yds (carry + roll)</div>
+    </div>
+    
+    <div class="stat">
+        <div class="stat-figure text-success">
+            <i class="ti ti-target text-3xl"></i>
+        </div>
+        <div class="stat-title">Apex Height</div>
+        <div class="stat-value text-success">98</div>
+        <div class="stat-desc">feet</div>
+    </div>
+    
+    <div class="stat">
+        <div class="stat-figure text-info">
+            <i class="ti ti-clock text-3xl"></i>
+        </div>
+        <div class="stat-title">Hang Time</div>
+        <div class="stat-value text-info">6.2</div>
+        <div class="stat-desc">seconds</div>
+    </div>
+    
+    <div class="stat">
+        <div class="stat-figure text-warning">
+            <i class="ti ti-medal text-3xl"></i>
+        </div>
+        <div class="stat-title">Shot Quality</div>
+        <div class="stat-value text-warning">92%</div>
+        <div class="stat-desc">Excellent shot!</div>
+    </div>
+</div>
+
+<!-- Shot Images Gallery -->
+<div class="card shadow-lg mb-6">
+    <div class="card-body">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="card-title">Shot Capture Images</h2>
+            <div class="badge badge-ghost">{{ shot.images|length }} frames</div>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="image-grid">
+            {% for image in shot.images %}
+            <div class="relative group">
+                <img src="/images/{{ image }}" 
+                     alt="Shot frame {{ loop.index }}" 
+                     class="shot-image rounded-lg w-full h-32 object-cover cursor-pointer"
+                     onclick="openImageModal('/images/{{ image }}')"
+                     loading="lazy">
+                <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                    <i class="ti ti-maximize text-white text-2xl"></i>
+                </div>
+                <div class="absolute bottom-1 right-1 badge badge-sm badge-ghost">Frame {{ loop.index }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if not shot.images %}
+        <div class="flex flex-col items-center justify-center py-12 text-base-content/50">
+            <i class="ti ti-photo-off text-5xl mb-3"></i>
+            <p>No shot images captured yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="flex flex-wrap gap-3 justify-center">
+    <button class="btn btn-primary gap-2" onclick="resetShot()">
+        <i class="ti ti-refresh"></i>
+        Reset Shot Data
+    </button>
+    <button class="btn btn-secondary gap-2" onclick="location.reload()">
+        <i class="ti ti-reload"></i>
+        Refresh Dashboard
+    </button>
+    <button class="btn btn-ghost gap-2" onclick="exportData()">
+        <i class="ti ti-download"></i>
+        Export Data
+    </button>
+</div>
+
+<!-- Image Modal -->
+<div id="image-modal" class="modal modal-middle" role="dialog" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-body p-0">
+                <img id="modal-image" src="" alt="Shot detail" class="w-full rounded-lg">
+                <button class="btn btn-circle btn-sm btn-ghost absolute end-2 top-2" 
+                        aria-label="Close" 
+                        onclick="closeImageModal()">
+                    <i class="ti ti-x text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="/static/js/dashboard.js"></script>
+<script>
+    // Image modal functions
+    function openImageModal(src) {
+        document.getElementById('modal-image').src = src;
+        document.getElementById('image-modal').classList.add('modal-open');
+    }
+    
+    function closeImageModal() {
+        document.getElementById('image-modal').classList.remove('modal-open');
+    }
+    
+    // Export data function
+    function exportData() {
+        // Implementation for exporting shot data
+        console.log('Exporting shot data...');
+    }
+    
+    // Update ball status based on system state
+    function updateBallStatus(status, message) {
+        const statusIcon = document.getElementById('ball-status-icon');
+        const statusTitle = document.getElementById('ball-status-title');
+        const statusMessage = document.getElementById('ball-status-message');
+        const indicator = document.getElementById('ball-ready-indicator');
+        
+        statusTitle.textContent = status;
+        statusMessage.textContent = message;
+        
+        // Update alert style based on status
+        indicator.className = 'alert mb-6';
+        if (status === 'Ball Ready') {
+            indicator.classList.add('alert-success');
+        } else if (status === 'Processing') {
+            indicator.classList.add('alert-info');
+        } else if (status === 'Error') {
+            indicator.classList.add('alert-error');
+        } else {
+            indicator.classList.add('alert-warning');
+        }
+    }
+</script>
+{% endblock %}

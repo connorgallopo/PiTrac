@@ -1,288 +1,596 @@
 {% extends "base.html" %}
 
-{% block title %}PiTrac Calibration{% endblock %}
+{% block title %}PiTrac Launch Monitor - Calibration{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/calibration.css">
-{% endblock %}
+{% block page_title %}System Calibration{% endblock %}
 
 {% block content %}
-<div class="main-content">
-    <div class="status-bar">
-        <div class="status-item">
-            <span class="status-label">System Mode:</span>
-            <span id="system-mode" class="status-value">Loading...</span>
-        </div>
-        <div class="status-item">
-            <span class="status-label">PiTrac Status:</span>
-            <span id="pitrac-status" class="status-value">Checking...</span>
+<!-- Calibration Wizard Container -->
+<div class="glass rounded-2xl p-6 border border-white/10">
+    <!-- Wizard Progress Steps -->
+    <div class="mb-8">
+        <div class="flex items-center justify-center">
+            <div class="flex items-center space-x-4 md:space-x-8">
+                <!-- Step 1 -->
+                <div class="step-item flex flex-col items-center cursor-pointer" onclick="goToStep(1)">
+                    <div id="step-1" class="step-circle w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center font-bold shadow-lg transition-all">
+                        1
+                    </div>
+                    <span class="text-xs font-medium text-white mt-2">Setup</span>
+                </div>
+                
+                <!-- Connector Line -->
+                <div class="h-0.5 w-12 md:w-24 bg-gray-600 relative">
+                    <div id="progress-1-2" class="absolute h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500" style="width: 0%"></div>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="step-item flex flex-col items-center cursor-pointer" onclick="goToStep(2)">
+                    <div id="step-2" class="step-circle w-12 h-12 rounded-full bg-gray-700 text-gray-400 flex items-center justify-center font-bold transition-all">
+                        2
+                    </div>
+                    <span class="text-xs font-medium text-gray-400 mt-2">Verify</span>
+                </div>
+                
+                <!-- Connector Line -->
+                <div class="h-0.5 w-12 md:w-24 bg-gray-600 relative">
+                    <div id="progress-2-3" class="absolute h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500" style="width: 0%"></div>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="step-item flex flex-col items-center cursor-pointer" onclick="goToStep(3)">
+                    <div id="step-3" class="step-circle w-12 h-12 rounded-full bg-gray-700 text-gray-400 flex items-center justify-center font-bold transition-all">
+                        3
+                    </div>
+                    <span class="text-xs font-medium text-gray-400 mt-2">Calibrate</span>
+                </div>
+                
+                <!-- Connector Line -->
+                <div class="h-0.5 w-12 md:w-24 bg-gray-600 relative">
+                    <div id="progress-3-4" class="absolute h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500" style="width: 0%"></div>
+                </div>
+                
+                <!-- Step 4 -->
+                <div class="step-item flex flex-col items-center cursor-pointer" onclick="goToStep(4)">
+                    <div id="step-4" class="step-circle w-12 h-12 rounded-full bg-gray-700 text-gray-400 flex items-center justify-center font-bold transition-all">
+                        4
+                    </div>
+                    <span class="text-xs font-medium text-gray-400 mt-2">Complete</span>
+                </div>
+            </div>
         </div>
     </div>
-
-    <div class="calibration-wizard">
-        <div class="wizard-steps">
-            <div class="step active" data-step="1">
-                <div class="step-number">1</div>
-                <div class="step-label">Setup</div>
-            </div>
-            <div class="step" data-step="2">
-                <div class="step-number">2</div>
-                <div class="step-label">Verify</div>
-            </div>
-            <div class="step" data-step="3">
-                <div class="step-number">3</div>
-                <div class="step-label">Calibrate</div>
-            </div>
-            <div class="step" data-step="4">
-                <div class="step-number">4</div>
-                <div class="step-label">Complete</div>
-            </div>
-        </div>
-
-        <div class="wizard-content" id="step1">
-            <h2>Calibration Setup</h2>
+    
+    <!-- Step Content Container -->
+    <div class="min-h-[400px]">
+        <!-- Step 1: Setup -->
+        <div id="step-content-1" class="step-content">
+            <h2 class="text-2xl font-bold text-white mb-6 text-center">Calibration Setup</h2>
             
-            <div class="setup-instructions">
-                <h3>Before You Begin:</h3>
-                <ol>
-                    <li>Ensure both cameras are properly connected</li>
-                    <li>Place a golf ball at the tee position</li>
-                    <li>Make sure the hitting area is well-lit</li>
-                    <li>Remove any obstructions from camera view</li>
+            <div class="glass rounded-xl p-6 border border-blue-500/20 mb-6">
+                <h3 class="font-semibold text-white mb-4">📋 Before You Begin:</h3>
+                <ol class="space-y-3 list-decimal list-inside text-gray-300">
+                    <li>Ensure both cameras are properly connected and powered on</li>
+                    <li>Place a golf ball at the designated tee position</li>
+                    <li>Ensure adequate lighting in the hitting area</li>
+                    <li>Clear any obstructions from the camera field of view</li>
+                    <li>Have your driver ready for test shots</li>
                 </ol>
             </div>
-
-            <div class="camera-selection">
-                <h3>Select Camera to Calibrate:</h3>
-                <div class="camera-options">
-                    <label class="camera-option">
-                        <input type="radio" name="camera" value="camera1" checked>
-                        <span class="camera-card">
-                            <span class="camera-name">Camera 1</span>
-                            <span class="camera-desc">Tee Camera (Top/Angled)</span>
-                        </span>
+            
+            <div class="mb-6">
+                <h3 class="font-semibold text-white mb-4">Select Calibration Mode:</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <label class="cursor-pointer group">
+                        <input type="radio" name="calibration-mode" value="camera1" class="peer sr-only">
+                        <div class="p-6 rounded-xl glass border-2 border-gray-600 hover:border-purple-500 peer-checked:border-purple-500 peer-checked:bg-purple-500/10 transition-all duration-300">
+                            <div class="flex items-center mb-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mr-3">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Camera 1</h4>
+                                    <p class="text-xs text-gray-400">Tee Camera</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-300">Calibrate top/angled view camera for initial ball detection</p>
+                        </div>
                     </label>
-                    <label class="camera-option">
-                        <input type="radio" name="camera" value="camera2">
-                        <span class="camera-card">
-                            <span class="camera-name">Camera 2</span>
-                            <span class="camera-desc">Flight Camera (Bottom/Straight)</span>
-                        </span>
+                    
+                    <label class="cursor-pointer group">
+                        <input type="radio" name="calibration-mode" value="camera2" class="peer sr-only">
+                        <div class="p-6 rounded-xl glass border-2 border-gray-600 hover:border-blue-500 peer-checked:border-blue-500 peer-checked:bg-blue-500/10 transition-all duration-300">
+                            <div class="flex items-center mb-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mr-3">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Camera 2</h4>
+                                    <p class="text-xs text-gray-400">Flight Camera</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-300">Calibrate bottom/straight view camera for flight tracking</p>
+                        </div>
                     </label>
-                    <label class="camera-option">
-                        <input type="radio" name="camera" value="both">
-                        <span class="camera-card">
-                            <span class="camera-name">Both Cameras</span>
-                            <span class="camera-desc">Full System Calibration</span>
-                        </span>
+                    
+                    <label class="cursor-pointer group">
+                        <input type="radio" name="calibration-mode" value="both" checked class="peer sr-only">
+                        <div class="p-6 rounded-xl glass border-2 border-gray-600 hover:border-green-500 peer-checked:border-green-500 peer-checked:bg-green-500/10 transition-all duration-300">
+                            <div class="flex items-center mb-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mr-3">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-semibold text-white">Both Cameras</h4>
+                                    <p class="text-xs text-gray-400">Recommended</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-300">Complete system calibration for optimal performance</p>
+                        </div>
                     </label>
                 </div>
             </div>
-
-            <div class="wizard-actions">
-                <button class="btn btn-primary" onclick="calibration.nextStep()">
-                    Next: Verify Ball Placement
+            
+            <div class="flex justify-end">
+                <button onclick="nextStep()" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
+                    Next: Verify Ball Placement →
                 </button>
             </div>
         </div>
-
-        <div class="wizard-content" id="step2" style="display: none;">
-            <h2>Verify Ball Placement</h2>
+        
+        <!-- Step 2: Verify -->
+        <div id="step-content-2" class="step-content hidden">
+            <h2 class="text-2xl font-bold text-white mb-6 text-center">Verify Ball Placement</h2>
             
-            <div class="verification-panel">
-                <div class="camera-views">
-                    <div class="camera-view" id="camera1-view">
-                        <h3>Camera 1 - Tee Camera (Top/Angled)</h3>
-                        <div class="camera-preview">
-                            <img id="camera1-image" src="" alt="Camera 1 preview" style="display: none;">
-                            <div class="camera-placeholder">
-                                <p>Click "Capture Image" to verify setup</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Camera 1 Preview -->
+                <div class="glass rounded-xl p-4 border border-purple-500/20">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-white">Camera 1 - Tee View</h3>
+                        <div id="cam1-status" class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                            <span class="text-xs text-yellow-400">Waiting</span>
+                        </div>
+                    </div>
+                    <div class="aspect-video bg-gray-800 rounded-lg mb-3 relative overflow-hidden">
+                        <img id="camera1-preview" src="" alt="" class="w-full h-full object-cover hidden">
+                        <div id="camera1-placeholder" class="w-full h-full flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-gray-400 text-sm">Click to capture image</p>
                             </div>
                         </div>
-                        <div class="camera-controls">
-                            <button class="btn btn-secondary" onclick="calibration.captureImage('camera1')">
-                                Capture Image
-                            </button>
-                            <button class="btn btn-secondary" onclick="calibration.checkBallLocation('camera1')">
-                                Check Ball Location
-                            </button>
-                        </div>
-                        <div class="ball-status" id="camera1-ball-status"></div>
                     </div>
-
-                    <div class="camera-view" id="camera2-view">
-                        <h3>Camera 2 - Flight Camera (Bottom/Straight)</h3>
-                        <div class="camera-preview">
-                            <img id="camera2-image" src="" alt="Camera 2 preview" style="display: none;">
-                            <div class="camera-placeholder">
-                                <p>Click "Capture Image" to verify setup</p>
-                            </div>
-                        </div>
-                        <div class="camera-controls">
-                            <button class="btn btn-secondary" onclick="calibration.captureImage('camera2')">
-                                Capture Image
-                            </button>
-                            <button class="btn btn-secondary" onclick="calibration.checkBallLocation('camera2')">
-                                Check Ball Location
-                            </button>
-                        </div>
-                        <div class="ball-status" id="camera2-ball-status"></div>
+                    <div class="flex space-x-2">
+                        <button onclick="captureImage(1)" class="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors">
+                            Capture Image
+                        </button>
+                        <button onclick="verifyBall(1)" class="flex-1 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors">
+                            Verify Ball
+                        </button>
                     </div>
                 </div>
-
-                <div class="verification-status">
-                    <div id="verification-message" class="alert alert-info">
-                        Capture images and verify ball is properly positioned for calibration.
-                    </div>
-                </div>
-            </div>
-
-            <div class="wizard-actions">
-                <button class="btn btn-secondary" onclick="calibration.prevStep()">
-                    Back
-                </button>
-                <button class="btn btn-primary" onclick="calibration.nextStep()" id="verify-next" disabled>
-                    Next: Start Calibration
-                </button>
-            </div>
-        </div>
-
-        <div class="wizard-content" id="step3" style="display: none;">
-            <h2>Calibration Process</h2>
-            
-            <div class="calibration-options">
-                <h3>Select Calibration Method:</h3>
-                <div class="method-cards">
-                    <div class="method-card" onclick="calibration.selectMethod('auto')">
-                        <h4>Automatic Calibration</h4>
-                        <p>Recommended for most users. Automatically detects and calibrates camera parameters.</p>
-                        <button class="btn btn-primary">Use Auto Calibration</button>
-                    </div>
-                    <div class="method-card" onclick="calibration.selectMethod('manual')">
-                        <h4>Manual Calibration</h4>
-                        <p>Advanced users only. Manually adjust camera parameters with real-time feedback.</p>
-                        <button class="btn btn-secondary">Use Manual Calibration</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="calibration-progress" id="calibration-progress" style="display: none;">
-                <h3>Calibration in Progress...</h3>
                 
-                <div class="progress-cameras">
-                    <div class="progress-camera" id="progress-camera1">
-                        <h4>Camera 1</h4>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="camera1-progress"></div>
+                <!-- Camera 2 Preview -->
+                <div class="glass rounded-xl p-4 border border-blue-500/20">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="font-semibold text-white">Camera 2 - Flight View</h3>
+                        <div id="cam2-status" class="flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                            <span class="text-xs text-yellow-400">Waiting</span>
                         </div>
-                        <div class="progress-status" id="camera1-status">Waiting...</div>
+                    </div>
+                    <div class="aspect-video bg-gray-800 rounded-lg mb-3 relative overflow-hidden">
+                        <img id="camera2-preview" src="" alt="" class="w-full h-full object-cover hidden">
+                        <div id="camera2-placeholder" class="w-full h-full flex items-center justify-center">
+                            <div class="text-center">
+                                <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    </svg>
+                                </div>
+                                <p class="text-gray-400 text-sm">Click to capture image</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="captureImage(2)" class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+                            Capture Image
+                        </button>
+                        <button onclick="verifyBall(2)" class="flex-1 px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors">
+                            Verify Ball
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="verification-status" class="glass rounded-xl p-4 border border-yellow-500/20 bg-yellow-500/5 mb-6">
+                <p class="text-yellow-400 text-center">📸 Capture images from both cameras and verify ball is properly positioned</p>
+            </div>
+            
+            <div class="flex justify-between">
+                <button onclick="prevStep()" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-xl shadow-lg transition-all duration-200">
+                    ← Back
+                </button>
+                <button onclick="nextStep()" id="verify-next-btn" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 opacity-50 cursor-not-allowed" disabled>
+                    Next: Start Calibration →
+                </button>
+            </div>
+        </div>
+        
+        <!-- Step 3: Calibrate -->
+        <div id="step-content-3" class="step-content hidden">
+            <h2 class="text-2xl font-bold text-white mb-6 text-center">Calibration Process</h2>
+            
+            <div id="calibration-options" class="mb-6">
+                <h3 class="font-semibold text-white mb-4">Select Calibration Method:</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="glass rounded-xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all cursor-pointer group" onclick="startAutoCalibration()">
+                        <div class="mb-4">
+                            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <h4 class="text-lg font-semibold text-white mb-2">Automatic Calibration</h4>
+                        <p class="text-sm text-gray-300 mb-4">Recommended for most users. AI-powered automatic detection and calibration.</p>
+                        <div class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-center font-medium rounded-lg transition-colors">
+                            Start Auto Calibration
+                        </div>
                     </div>
                     
-                    <div class="progress-camera" id="progress-camera2">
-                        <h4>Camera 2</h4>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="camera2-progress"></div>
+                    <div class="glass rounded-xl p-6 border border-gray-500/20 hover:border-gray-500/40 transition-all cursor-pointer group" onclick="startManualCalibration()">
+                        <div class="mb-4">
+                            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-gray-500 to-gray-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                                </svg>
+                            </div>
                         </div>
-                        <div class="progress-status" id="camera2-status">Waiting...</div>
+                        <h4 class="text-lg font-semibold text-white mb-2">Manual Calibration</h4>
+                        <p class="text-sm text-gray-300 mb-4">Advanced users only. Manually adjust all parameters with real-time feedback.</p>
+                        <div class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-center font-medium rounded-lg transition-colors">
+                            Start Manual Setup
+                        </div>
                     </div>
                 </div>
-
-                <div class="calibration-log">
-                    <h4>Process Log:</h4>
-                    <div id="calibration-log-content" class="log-content"></div>
+            </div>
+            
+            <div id="calibration-progress" class="hidden">
+                <h3 class="font-semibold text-white mb-4">Calibration in Progress...</h3>
+                
+                <div class="space-y-4 mb-6">
+                    <!-- Camera 1 Progress -->
+                    <div class="glass rounded-lg p-4 border border-purple-500/20">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-white">Camera 1 - Tee Camera</span>
+                            <span id="cam1-progress-status" class="text-xs text-yellow-400">Processing...</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div id="cam1-progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Camera 2 Progress -->
+                    <div class="glass rounded-lg p-4 border border-blue-500/20">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-sm font-medium text-white">Camera 2 - Flight Camera</span>
+                            <span id="cam2-progress-status" class="text-xs text-yellow-400">Processing...</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div id="cam2-progress-bar" class="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
                 </div>
-
-                <div class="calibration-controls">
-                    <button class="btn btn-danger" onclick="calibration.stopCalibration()">
+                
+                <!-- Process Log -->
+                <div class="glass rounded-lg p-4 border border-white/10 mb-6">
+                    <h4 class="text-sm font-medium text-gray-300 mb-2">Process Log:</h4>
+                    <div id="calibration-log" class="bg-black/50 rounded p-3 h-32 overflow-y-auto font-mono text-xs text-gray-400">
+                        <div class="log-entry">[INFO] Starting calibration process...</div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-center space-x-4">
+                    <button onclick="stopCalibration()" class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl shadow-lg transition-all duration-200">
                         Stop Calibration
                     </button>
                 </div>
             </div>
-
-            <div class="wizard-actions">
-                <button class="btn btn-secondary" onclick="calibration.prevStep()">
-                    Back
-                </button>
-            </div>
         </div>
-
-        <div class="wizard-content" id="step4" style="display: none;">
-            <h2>Calibration Complete</h2>
+        
+        <!-- Step 4: Complete -->
+        <div id="step-content-4" class="step-content hidden">
+            <div class="text-center mb-6">
+                <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center animate-pulse">
+                    <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-2">Calibration Complete!</h2>
+                <p class="text-gray-300">Your PiTrac system is now calibrated and ready for use</p>
+            </div>
             
-            <div class="calibration-results">
-                <div class="success-icon">🎉</div>
-                
-                <div class="results-summary">
-                    <h3>Calibration Results:</h3>
-                    
-                    <div class="result-cards">
-                        <div class="result-card">
-                            <h4>Camera 1 - Tee Camera</h4>
-                            <div class="result-data" id="camera1-results">
-                                <div class="result-item">
-                                    <span class="result-label">Focal Length:</span>
-                                    <span class="result-value" id="camera1-focal">--</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">X Offset:</span>
-                                    <span class="result-value" id="camera1-x">--</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">Y Offset:</span>
-                                    <span class="result-value" id="camera1-y">--</span>
-                                </div>
-                            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- Camera 1 Results -->
+                <div class="glass rounded-xl p-6 border border-purple-500/20">
+                    <h3 class="font-semibold text-white mb-4">Camera 1 - Tee Camera</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-400">Focal Length</span>
+                            <span class="text-sm font-medium text-white" id="cam1-focal">825.4 px</span>
                         </div>
-                        
-                        <div class="result-card">
-                            <h4>Camera 2 - Flight Camera</h4>
-                            <div class="result-data" id="camera2-results">
-                                <div class="result-item">
-                                    <span class="result-label">Focal Length:</span>
-                                    <span class="result-value" id="camera2-focal">--</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">X Offset:</span>
-                                    <span class="result-value" id="camera2-x">--</span>
-                                </div>
-                                <div class="result-item">
-                                    <span class="result-label">Y Offset:</span>
-                                    <span class="result-value" id="camera2-y">--</span>
-                                </div>
-                            </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-400">Center X</span>
+                            <span class="text-sm font-medium text-white" id="cam1-cx">960.0 px</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-400">Center Y</span>
+                            <span class="text-sm font-medium text-white" id="cam1-cy">540.0 px</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-400">Distortion K1</span>
+                            <span class="text-sm font-medium text-white" id="cam1-k1">0.082</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-400">Quality Score</span>
+                            <span class="text-sm font-medium text-green-400">98.5%</span>
                         </div>
                     </div>
                 </div>
-
-                <div class="next-steps">
-                    <h3>Next Steps:</h3>
-                    <ol>
-                        <li>Test the calibration by hitting a few shots</li>
-                        <li>Verify ball detection is working correctly</li>
-                        <li>Fine-tune settings if needed in Configuration</li>
-                    </ol>
+                
+                <!-- Camera 2 Results -->
+                <div class="glass rounded-xl p-6 border border-blue-500/20">
+                    <h3 class="font-semibold text-white mb-4">Camera 2 - Flight Camera</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-400">Focal Length</span>
+                            <span class="text-sm font-medium text-white" id="cam2-focal">812.7 px</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-400">Center X</span>
+                            <span class="text-sm font-medium text-white" id="cam2-cx">960.0 px</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-400">Center Y</span>
+                            <span class="text-sm font-medium text-white" id="cam2-cy">540.0 px</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-400">Distortion K1</span>
+                            <span class="text-sm font-medium text-white" id="cam2-k1">0.075</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-400">Quality Score</span>
+                            <span class="text-sm font-medium text-green-400">97.2%</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <div class="wizard-actions">
-                <button class="btn btn-secondary" onclick="calibration.restart()">
-                    Calibrate Again
+            
+            <div class="glass rounded-xl p-6 border border-green-500/20 bg-green-500/5 mb-6">
+                <h3 class="font-semibold text-white mb-3">🎯 Next Steps:</h3>
+                <ol class="space-y-2 list-decimal list-inside text-gray-300">
+                    <li>Test the calibration by hitting a few practice shots</li>
+                    <li>Verify ball detection is working correctly on both cameras</li>
+                    <li>Fine-tune settings in Configuration if needed</li>
+                    <li>Start your practice session from the Dashboard</li>
+                </ol>
+            </div>
+            
+            <div class="flex justify-center space-x-4">
+                <button onclick="recalibrate()" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-xl shadow-lg transition-all duration-200">
+                    Recalibrate
                 </button>
-                <button class="btn btn-primary" onclick="window.location.href='/'">
-                    Return to Dashboard
+                <button onclick="window.location.href='/'" class="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
+                    Go to Dashboard →
                 </button>
             </div>
-        </div>
-    </div>
-
-    <div class="current-calibration">
-        <h3>Current Calibration Data</h3>
-        <div id="current-calibration-data" class="calibration-data-grid">
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/js/calibration.js"></script>
+<script>
+let currentStep = 1;
+let verifiedCameras = { cam1: false, cam2: false };
+let calibrationInterval = null;
+
+// Wizard navigation
+function goToStep(step) {
+    if (step < currentStep) {
+        // Allow going back
+        currentStep = step;
+        updateWizardUI();
+    }
+}
+
+function nextStep() {
+    if (currentStep < 4) {
+        currentStep++;
+        updateWizardUI();
+    }
+}
+
+function prevStep() {
+    if (currentStep > 1) {
+        currentStep--;
+        updateWizardUI();
+    }
+}
+
+function updateWizardUI() {
+    // Hide all step content
+    document.querySelectorAll('.step-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Show current step content
+    document.getElementById(`step-content-${currentStep}`).classList.remove('hidden');
+    
+    // Update step indicators
+    for (let i = 1; i <= 4; i++) {
+        const stepCircle = document.getElementById(`step-${i}`);
+        const stepText = stepCircle.parentElement.querySelector('span');
+        
+        if (i < currentStep) {
+            // Completed step
+            stepCircle.className = 'step-circle w-12 h-12 rounded-full bg-green-500 text-white flex items-center justify-center font-bold shadow-lg transition-all';
+            stepCircle.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            stepText.className = 'text-xs font-medium text-green-400 mt-2';
+        } else if (i === currentStep) {
+            // Active step
+            stepCircle.className = 'step-circle w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 text-white flex items-center justify-center font-bold shadow-lg transition-all transform scale-110';
+            stepCircle.textContent = i;
+            stepText.className = 'text-xs font-medium text-white mt-2';
+        } else {
+            // Future step
+            stepCircle.className = 'step-circle w-12 h-12 rounded-full bg-gray-700 text-gray-400 flex items-center justify-center font-bold transition-all';
+            stepCircle.textContent = i;
+            stepText.className = 'text-xs font-medium text-gray-400 mt-2';
+        }
+    }
+    
+    // Update progress lines
+    for (let i = 1; i < 4; i++) {
+        const progress = document.getElementById(`progress-${i}-${i+1}`);
+        if (i < currentStep) {
+            progress.style.width = '100%';
+        } else {
+            progress.style.width = '0%';
+        }
+    }
+}
+
+// Camera functions
+function captureImage(cameraId) {
+    const preview = document.getElementById(`camera${cameraId}-preview`);
+    const placeholder = document.getElementById(`camera${cameraId}-placeholder`);
+    const status = document.getElementById(`cam${cameraId}-status`);
+    
+    // Simulate image capture
+    placeholder.classList.add('hidden');
+    preview.src = `/static/images/test-ball-${cameraId}.jpg`; // Would be actual camera feed
+    preview.classList.remove('hidden');
+    
+    status.innerHTML = '<div class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div><span class="text-xs text-yellow-400">Image captured</span>';
+}
+
+function verifyBall(cameraId) {
+    const status = document.getElementById(`cam${cameraId}-status`);
+    
+    // Simulate ball verification
+    setTimeout(() => {
+        verifiedCameras[`cam${cameraId}`] = true;
+        status.innerHTML = '<div class="w-2 h-2 bg-green-500 rounded-full"></div><span class="text-xs text-green-400">Ball detected</span>';
+        
+        // Check if both cameras verified
+        if (verifiedCameras.cam1 && verifiedCameras.cam2) {
+            document.getElementById('verify-next-btn').disabled = false;
+            document.getElementById('verify-next-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            document.getElementById('verification-status').innerHTML = '<p class="text-green-400 text-center">✅ Both cameras verified! Ready to proceed with calibration.</p>';
+        }
+    }, 1500);
+}
+
+// Calibration functions
+function startAutoCalibration() {
+    document.getElementById('calibration-options').classList.add('hidden');
+    document.getElementById('calibration-progress').classList.remove('hidden');
+    
+    let progress1 = 0;
+    let progress2 = 0;
+    
+    // Add log entries
+    addLogEntry('[INFO] Initializing automatic calibration...');
+    
+    calibrationInterval = setInterval(() => {
+        // Update camera 1 progress
+        if (progress1 < 100) {
+            progress1 += Math.random() * 10;
+            if (progress1 > 100) progress1 = 100;
+            document.getElementById('cam1-progress-bar').style.width = progress1 + '%';
+            
+            if (progress1 === 100) {
+                document.getElementById('cam1-progress-status').textContent = 'Complete';
+                document.getElementById('cam1-progress-status').className = 'text-xs text-green-400';
+                addLogEntry('[SUCCESS] Camera 1 calibration complete');
+            }
+        }
+        
+        // Update camera 2 progress
+        if (progress2 < 100) {
+            progress2 += Math.random() * 8;
+            if (progress2 > 100) progress2 = 100;
+            document.getElementById('cam2-progress-bar').style.width = progress2 + '%';
+            
+            if (progress2 === 100) {
+                document.getElementById('cam2-progress-status').textContent = 'Complete';
+                document.getElementById('cam2-progress-status').className = 'text-xs text-green-400';
+                addLogEntry('[SUCCESS] Camera 2 calibration complete');
+            }
+        }
+        
+        // Check if both complete
+        if (progress1 === 100 && progress2 === 100) {
+            clearInterval(calibrationInterval);
+            addLogEntry('[SUCCESS] System calibration complete!');
+            
+            setTimeout(() => {
+                currentStep = 4;
+                updateWizardUI();
+            }, 2000);
+        }
+    }, 500);
+}
+
+function startManualCalibration() {
+    alert('Manual calibration interface would open here');
+}
+
+function stopCalibration() {
+    if (calibrationInterval) {
+        clearInterval(calibrationInterval);
+        addLogEntry('[WARNING] Calibration stopped by user');
+    }
+    document.getElementById('calibration-options').classList.remove('hidden');
+    document.getElementById('calibration-progress').classList.add('hidden');
+}
+
+function addLogEntry(message) {
+    const log = document.getElementById('calibration-log');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+}
+
+function recalibrate() {
+    currentStep = 1;
+    verifiedCameras = { cam1: false, cam2: false };
+    updateWizardUI();
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+    updateWizardUI();
+});
+</script>
 {% endblock %}

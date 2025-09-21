@@ -1,157 +1,320 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}PiTrac Launch Monitor{% endblock %}</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-    <link rel="stylesheet" href="/static/css/common.css">
-    {% block extra_css %}{% endblock %}
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    
+    <!-- Google Fonts - Inter for modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <link href="/static/css/tailwind.css" rel="stylesheet">
+    
+    <!-- Custom CSS for advanced effects -->
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        
+        /* Beautiful gradient animation */
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .gradient-animation {
+            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        /* Glass morphism effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glass-dark {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Glow effect */
+        .glow {
+            box-shadow: 0 0 30px rgba(147, 51, 234, 0.3);
+        }
+        
+        /* Smooth scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+        }
+        
+        /* Pulse animation for live indicator */
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+            }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s infinite;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="status-indicators-vertical">
-                <div class="status-indicator">
-                    <div class="status-dot" id="ws-status-dot" title="WebSocket"></div>
-                    <span class="status-label">WS</span>
-                </div>
-                <div class="status-indicator">
-                    <div class="status-dot" id="mq-status-dot" title="ActiveMQ"></div>
-                    <span class="status-label">MQ</span>
-                </div>
-                <div class="status-indicator">
-                    <div class="status-dot" id="pitrac-status-dot" title="PiTrac Camera 1"></div>
-                    <span class="status-label">C1</span>
-                </div>
-                <div class="status-indicator" id="camera2-status-container" style="display: none;">
-                    <div class="status-dot" id="pitrac-camera2-status-dot" title="PiTrac Camera 2"></div>
-                    <span class="status-label">C2</span>
+<body class="h-full bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <!-- Beautiful gradient background -->
+    <div class="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-pink-900/20 to-blue-900/20"></div>
+    <div class="fixed inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"></div>
+    
+    <div class="relative min-h-screen flex">
+        <!-- Sidebar Navigation - Glass Morphism -->
+        <nav class="w-72 glass-dark border-r border-white/10 flex flex-col">
+            <!-- Logo Section -->
+            <div class="p-6 border-b border-white/10">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg p-[2%]">
+                        <!-- <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg> -->
+                        <img src="/static/logos/PiTrac_Square.svg" viewBox="0 0 24 24" alt="PiTrac Logo" class="w-full h-full object-contain">
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">PiTrac</h1>
+                        <p class="text-xs text-purple-300">Launch Monitor</p>
+                    </div>
                 </div>
             </div>
-            <div class="header-content">
-                <a href="/" title="Dashboard">
-                    <img src="/static/logos/PiTrac.svg" alt="PiTrac Logo" class="header-logo">
+            
+            <!-- Navigation Links -->
+            <div class="flex-1 p-4 space-y-2">
+                <a href="/" class="flex items-center space-x-3 px-4 py-3 rounded-xl {% if request.endpoint == 'index' %}bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg{% else %}hover:bg-white/10{% endif %} text-white transition-all duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                
+                <a href="/golf" class="flex items-center space-x-3 px-4 py-3 rounded-xl {% if request.endpoint == 'golf_dashboard' %}bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg{% else %}hover:bg-white/10{% endif %} text-white transition-all duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                    <span class="font-medium">Shot Analysis</span>
+                    <span class="ml-auto bg-green-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">LIVE</span>
+                </a>
+                
+                <a href="/calibration" class="flex items-center space-x-3 px-4 py-3 rounded-xl {% if request.endpoint == 'calibration' %}bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg{% else %}hover:bg-white/10{% endif %} text-white transition-all duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                    </svg>
+                    <span class="font-medium">Calibration</span>
+                </a>
+                
+                <a href="/config" class="flex items-center space-x-3 px-4 py-3 rounded-xl {% if request.endpoint == 'config' %}bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg{% else %}hover:bg-white/10{% endif %} text-white transition-all duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span class="font-medium">Settings</span>
+                </a>
+                
+                <a href="/logs" class="flex items-center space-x-3 px-4 py-3 rounded-xl {% if request.endpoint == 'logs' %}bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg{% else %}hover:bg-white/10{% endif %} text-white transition-all duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span class="font-medium">System Logs</span>
+                </a>
+                
+                <a href="/testing" class="flex items-center space-x-3 px-4 py-3 rounded-xl {% if request.endpoint == 'testing' %}bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg{% else %}hover:bg-white/10{% endif %} text-white transition-all duration-200">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                    </svg>
+                    <span class="font-medium">Diagnostics</span>
                 </a>
             </div>
-            <div class="pitrac-controls desktop-only">
-                <button id="pitrac-start-btn-desktop" class="control-btn start-btn" onclick="controlPiTrac('start')" title="Start PiTrac">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-                    </svg>
-                    <span class="btn-text">Start</span>
-                </button>
-                <button id="pitrac-stop-btn-desktop" class="control-btn stop-btn" onclick="controlPiTrac('stop')" title="Stop PiTrac">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z"/>
-                    </svg>
-                    <span class="btn-text">Stop</span>
-                </button>
-                <button id="pitrac-restart-btn-desktop" class="control-btn restart-btn" onclick="controlPiTrac('restart')" title="Restart PiTrac">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
-                        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
-                    </svg>
-                    <span class="btn-text">Restart</span>
-                </button>
-            </div>
-            <div class="header-right">
-                <div id="timestamp">Never</div>
-                <div class="dropdown">
-                    <button class="dropdown-toggle" aria-label="Menu">
-                        <svg fill="currentColor" viewBox="0 0 20 20" width="24" height="24">
-                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
-                        </svg>
-                    </button>
-                    <div class="dropdown-menu">
-                        <div class="pitrac-controls-mobile mobile-only">
-                            <span class="dropdown-label">PiTrac Controls</span>
-                            <div class="mobile-control-buttons">
-                                <button id="pitrac-start-btn-mobile" class="control-btn start-btn" onclick="controlPiTrac('start')" title="Start PiTrac">
-                                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
-                                    </svg>
-                                    Start
-                                </button>
-                                <button id="pitrac-stop-btn-mobile" class="control-btn stop-btn" onclick="controlPiTrac('stop')" title="Stop PiTrac">
-                                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z"/>
-                                    </svg>
-                                    Stop
-                                </button>
-                                <button id="pitrac-restart-btn-mobile" class="control-btn restart-btn" onclick="controlPiTrac('restart')" title="Restart PiTrac">
-                                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                                        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
-                                        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
-                                    </svg>
-                                    Restart
-                                </button>
-                            </div>
+            
+            <!-- System Status -->
+            <div class="p-4 border-t border-white/10">
+                <div class="glass rounded-xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-400">System Status</span>
+                        <div class="flex items-center space-x-1">
+                            <div class="w-2 h-2 bg-green-500 rounded-full pulse-glow"></div>
+                            <span class="text-xs text-green-400">Online</span>
                         </div>
-                        <div class="dropdown-divider mobile-only"></div>
-                        <a href="/" class="dropdown-item">
-                            <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
-                                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                            </svg>
-                            Dashboard
-                        </a>
-                        <a href="/calibration" class="dropdown-item">
-                            <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
-                                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                            </svg>
-                            Calibration
-                        </a>
-                        <a href="/config" class="dropdown-item">
-                            <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
-                                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
-                            </svg>
-                            Configuration
-                        </a>
-                        <a href="/logs" class="dropdown-item">
-                            <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
-                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"/>
-                            </svg>
-                            Logs
-                        </a>
-                        <a href="/testing" class="dropdown-item">
-                            <svg fill="currentColor" viewBox="0 0 20 20" width="20" height="20">
-                                <path d="M7 2a1 1 0 00-1 1v4l2 4v6a2 2 0 002 2h0a2 2 0 002-2v-6l2-4V3a1 1 0 00-1-1H7zM7 3h6v3.5L11.5 9h-3L7 6.5V3z"/>
-                            </svg>
-                            Testing Tools
-                        </a>
-                        <div class="dropdown-divider"></div>
-                        <div class="theme-selector">
-                            <span class="dropdown-label">Theme</span>
-                            <div class="theme-options">
-                                <button class="theme-btn" data-theme="light" title="Light mode" onclick="setTheme('light')">
-                                    <svg fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
-                                    </svg>
-                                </button>
-                                <button class="theme-btn" data-theme="dark" title="Dark mode" onclick="setTheme('dark')">
-                                    <svg fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
-                                    </svg>
-                                </button>
-                                <button class="theme-btn" data-theme="system" title="System theme" onclick="setTheme('system')">
-                                    <svg fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"/>
-                                    </svg>
-                                </button>
-                            </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-400">CPU</span>
+                            <span class="text-white font-medium">24%</span>
+                        </div>
+                        <div class="w-full bg-gray-800 rounded-full h-1.5">
+                            <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-1.5 rounded-full" style="width: 24%"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-400">Memory</span>
+                            <span class="text-white font-medium">2.1GB / 8GB</span>
+                        </div>
+                        <div class="w-full bg-gray-800 rounded-full h-1.5">
+                            <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-1.5 rounded-full" style="width: 26%"></div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </nav>
         
-        {% block content %}{% endblock %}
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col">
+            <!-- Top Bar -->
+            <header class="glass-dark border-b border-white/10">
+                <div class="px-8 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <h2 class="text-2xl font-bold text-white">{% block page_title %}Dashboard{% endblock %}</h2>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Notifications -->
+                        <button class="relative p-2 text-gray-400 hover:text-white transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                            </svg>
+                            <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+                        
+                        <!-- Dark Mode Toggle -->
+                        <button class="p-2 text-gray-400 hover:text-white transition-colors" onclick="toggleTheme()">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                            </svg>
+                        </button>
+                        
+                        <!-- User Profile -->
+                        <div class="flex items-center space-x-3 pl-4 border-l border-white/10">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                                <span class="text-white font-semibold">JD</span>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-white">John Doe</p>
+                                <p class="text-xs text-gray-400">Pro Golfer</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <main class="flex-1 overflow-y-auto p-8">
+                <div class="max-w-7xl mx-auto">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
     </div>
+    
+    <!-- Common JavaScript utilities -->
+    <script>
+        // Theme toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        }
 
-    <script src="/static/js/common.js"></script>
+        // Load saved theme
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        });
+
+        // Common WebSocket connection (can be overridden by page-specific scripts)
+        let ws = null;
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+            ws = new WebSocket(wsUrl);
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                // Update status indicator if exists
+                const statusDot = document.querySelector('.pulse-glow');
+                if (statusDot) {
+                    statusDot.classList.remove('bg-red-500');
+                    statusDot.classList.add('bg-green-500');
+                }
+            };
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                // Page-specific handlers can override this
+                if (typeof handleWebSocketMessage === 'function') {
+                    handleWebSocketMessage(data);
+                }
+            };
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                // Update status indicator if exists
+                const statusDot = document.querySelector('.pulse-glow');
+                if (statusDot) {
+                    statusDot.classList.remove('bg-green-500');
+                    statusDot.classList.add('bg-red-500');
+                }
+            };
+            ws.onclose = () => {
+                console.log('WebSocket disconnected, reconnecting...');
+                setTimeout(connectWebSocket, 3000);
+            };
+            return ws;
+        }
+
+        // Initialize WebSocket on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Only connect if page needs real-time updates
+            const needsWebSocket = document.querySelector('[data-websocket="true"]');
+            if (needsWebSocket || window.location.pathname === '/' || window.location.pathname === '/golf') {
+                connectWebSocket();
+            }
+        });
+
+        // Update system status metrics (CPU/Memory)
+        function updateSystemStatus(cpuPercent, memoryUsed, memoryTotal) {
+            const cpuText = document.querySelector('.space-y-2:first-child .text-white');
+            const cpuBar = document.querySelector('.space-y-2:first-child .bg-gradient-to-r');
+            if (cpuText) cpuText.textContent = `${cpuPercent}%`;
+            if (cpuBar) cpuBar.style.width = `${cpuPercent}%`;
+
+            const memoryText = document.querySelector('.space-y-2:last-child .text-white');
+            const memoryBar = document.querySelector('.space-y-2:last-child .bg-gradient-to-r');
+            if (memoryText) memoryText.textContent = `${memoryUsed}GB / ${memoryTotal}GB`;
+            if (memoryBar) memoryBar.style.width = `${(memoryUsed/memoryTotal)*100}%`;
+        }
+    </script>
+
     {% block extra_scripts %}{% endblock %}
 </body>
 </html>

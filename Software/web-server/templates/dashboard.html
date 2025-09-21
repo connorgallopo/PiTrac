@@ -1,92 +1,354 @@
 {% extends "base.html" %}
 
-{% block title %}PiTrac Launch Monitor{% endblock %}
+{% block title %}PiTrac Launch Monitor - Dashboard{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/dashboard.css">
-{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="ball-ready-indicator" id="ball-ready-indicator">
-    <div class="ball-status-icon" id="ball-status-icon">
-        <div class="ball-icon"></div>
+<!-- Hero Stats Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Ball Speed Card -->
+    <div class="glass rounded-2xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20 group" data-metric="ball-speed">
+        <div class="flex items-start justify-between mb-4">
+            <div class="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+            <span class="metric-change text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">+2.3%</span>
+        </div>
+        <h3 class="text-gray-400 text-sm font-medium mb-1">Ball Speed</h3>
+        <p class="metric-value text-3xl font-bold text-white mb-2">167.4 <span class="text-lg text-gray-400">mph</span></p>
+        <div class="flex items-center space-x-2 text-xs">
+            <span class="text-gray-500">Avg:</span>
+            <span class="text-gray-300" data-stat="avg-speed">165.2 mph</span>
+            <span class="text-gray-500">•</span>
+            <span class="text-gray-500">Max:</span>
+            <span class="text-purple-400 font-medium" data-stat="max-speed">172.8 mph</span>
+        </div>
     </div>
-    <div class="ball-status-text">
-        <div class="ball-status-title" id="ball-status-title">System Status</div>
-        <div class="ball-status-message" id="ball-status-message">Initializing...</div>
+
+    <!-- Launch Angle Card -->
+    <div class="glass rounded-2xl p-6 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/20 group" data-metric="launch-angle">
+        <div class="flex items-start justify-between mb-4">
+            <div class="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                </svg>
+            </div>
+            <span class="metric-status text-xs text-yellow-400 bg-yellow-400/10 px-2 py-1 rounded-full">Optimal</span>
+        </div>
+        <h3 class="text-gray-400 text-sm font-medium mb-1">Launch Angle</h3>
+        <p class="metric-value text-3xl font-bold text-white mb-2">13.2<span class="text-lg text-gray-400">°</span></p>
+        <div class="flex items-center space-x-2 text-xs">
+            <span class="text-gray-500">Target:</span>
+            <span class="text-gray-300">12-15°</span>
+            <span class="text-gray-500">•</span>
+            <span class="text-green-400 font-medium">✓ In Range</span>
+        </div>
+    </div>
+
+    <!-- Spin Rate Card -->
+    <div class="glass rounded-2xl p-6 border border-green-500/20 hover:border-green-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/20 group" data-metric="spin-rate">
+        <div class="flex items-start justify-between mb-4">
+            <div class="p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </div>
+            <span class="metric-change text-xs text-red-400 bg-red-400/10 px-2 py-1 rounded-full">-5.1%</span>
+        </div>
+        <h3 class="text-gray-400 text-sm font-medium mb-1">Spin Rate</h3>
+        <p class="metric-value text-3xl font-bold text-white mb-2">2,847 <span class="text-lg text-gray-400">rpm</span></p>
+        <div class="flex items-center space-x-2 text-xs">
+            <span class="text-gray-500">Avg:</span>
+            <span class="text-gray-300">2,950 rpm</span>
+            <span class="text-gray-500">•</span>
+            <span class="text-gray-500">Backspin</span>
+        </div>
+    </div>
+
+    <!-- Carry Distance Card -->
+    <div class="glass rounded-2xl p-6 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300 hover:shadow-2xl hover:shadow-orange-500/20 group" data-metric="carry-distance">
+        <div class="flex items-start justify-between mb-4">
+            <div class="p-3 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+            </div>
+            <span class="metric-change text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">+8 yds</span>
+        </div>
+        <h3 class="text-gray-400 text-sm font-medium mb-1">Carry Distance</h3>
+        <p class="metric-value text-3xl font-bold text-white mb-2">278 <span class="text-lg text-gray-400">yds</span></p>
+        <div class="flex items-center space-x-2 text-xs">
+            <span class="text-gray-500">Total:</span>
+            <span class="text-gray-300">295 yds</span>
+            <span class="text-gray-500">•</span>
+            <span class="text-orange-400 font-medium">+17 roll</span>
+        </div>
     </div>
 </div>
 
-<div class="metrics-grid">
-    <div class="metric-card">
-        <div class="metric-header">Ball Speed</div>
-        <div class="metric-value">
-            <span id="speed">{{ shot.speed }}</span>
-            <span class="metric-unit">mph</span>
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Shot Trajectory Visualization -->
+    <div class="lg:col-span-2">
+        <div class="glass rounded-2xl p-6 border border-white/10">
+            <h3 class="text-lg font-semibold text-white mb-4">Shot Trajectory</h3>
+            <div class="relative h-64 bg-gradient-to-b from-blue-900/20 to-transparent rounded-xl overflow-hidden">
+                <!-- Grid lines -->
+                <div class="absolute inset-0">
+                    <div class="h-full w-full">
+                        <svg class="w-full h-full">
+                            <!-- Horizontal grid lines -->
+                            <line x1="0" y1="25%" x2="100%" y2="25%" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                            <line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                            <line x1="0" y1="75%" x2="100%" y2="75%" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                            <!-- Vertical grid lines -->
+                            <line x1="25%" y1="0" x2="25%" y2="100%" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                            <line x1="50%" y1="0" x2="50%" y2="100%" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                            <line x1="75%" y1="0" x2="75%" y2="100%" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                            <!-- Ball flight path -->
+                            <path d="M 10 200 Q 250 50 490 180" stroke="url(#gradient)" stroke-width="3" fill="none" stroke-dasharray="5,5" opacity="0.8"/>
+                            <defs>
+                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <!-- Ball positions -->
+                            <circle cx="10" cy="200" r="4" fill="#22c55e"/>
+                            <circle cx="490" cy="180" r="3" fill="#ec4899"/>
+                        </svg>
+                    </div>
+                </div>
+                <!-- Distance markers -->
+                <div class="absolute bottom-2 left-0 right-0 flex justify-between px-4 text-xs text-gray-400">
+                    <span>0</span>
+                    <span>100</span>
+                    <span>200</span>
+                    <span>278 yds</span>
+                </div>
+                <!-- Height marker -->
+                <div class="absolute left-2 top-0 bottom-0 flex flex-col justify-between py-4 text-xs text-gray-400">
+                    <span>40y</span>
+                    <span>20y</span>
+                    <span>0</span>
+                </div>
+            </div>
+            
+            <!-- Shot Data Points -->
+            <div class="grid grid-cols-4 gap-4 mt-6">
+                <div class="text-center">
+                    <p class="text-xs text-gray-400 mb-1">Club Speed</p>
+                    <p class="text-lg font-bold text-white">112 mph</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-400 mb-1">Smash Factor</p>
+                    <p class="text-lg font-bold text-white">1.49</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-400 mb-1">Attack Angle</p>
+                    <p class="text-lg font-bold text-white">-2.3°</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-400 mb-1">Club Path</p>
+                    <p class="text-lg font-bold text-white">+1.2°</p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="metric-card">
-        <div class="metric-header">Carry Distance</div>
-        <div class="metric-value">
-            <span id="carry">{{ shot.carry }}</span>
-            <span class="metric-unit">yds</span>
-        </div>
-    </div>
-
-    <div class="metric-card">
-        <div class="metric-header">Launch Angle</div>
-        <div class="metric-value">
-            <span id="launch_angle">{{ shot.launch_angle }}</span>
-            <span class="metric-unit">°</span>
-        </div>
-    </div>
-
-    <div class="metric-card">
-        <div class="metric-header">Side Angle</div>
-        <div class="metric-value">
-            <span id="side_angle">{{ shot.side_angle }}</span>
-            <span class="metric-unit">°</span>
-        </div>
-    </div>
-
-    <div class="metric-card">
-        <div class="metric-header">Back Spin</div>
-        <div class="metric-value">
-            <span id="back_spin">{{ shot.back_spin }}</span>
-            <span class="metric-unit">rpm</span>
-        </div>
-    </div>
-
-    <div class="metric-card">
-        <div class="metric-header">Side Spin</div>
-        <div class="metric-value">
-            <span id="side_spin">{{ shot.side_spin }}</span>
-            <span class="metric-unit">rpm</span>
+    <!-- Recent Shots -->
+    <div>
+        <div class="glass rounded-2xl p-6 border border-white/10">
+            <h3 class="text-lg font-semibold text-white mb-4">Recent Shots</h3>
+            <div class="space-y-3">
+                <!-- Shot 1 -->
+                <div class="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-white">Driver</span>
+                        <span class="text-xs text-gray-400">2:34 PM</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <span class="text-gray-400">Distance:</span>
+                            <span class="text-white ml-1">295 yds</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Speed:</span>
+                            <span class="text-white ml-1">167 mph</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Shot 2 -->
+                <div class="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-white">7 Iron</span>
+                        <span class="text-xs text-gray-400">2:32 PM</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <span class="text-gray-400">Distance:</span>
+                            <span class="text-white ml-1">172 yds</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Speed:</span>
+                            <span class="text-white ml-1">128 mph</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Shot 3 -->
+                <div class="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-white">Wedge</span>
+                        <span class="text-xs text-gray-400">2:28 PM</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                            <span class="text-gray-400">Distance:</span>
+                            <span class="text-white ml-1">125 yds</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Speed:</span>
+                            <span class="text-white ml-1">94 mph</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- View All Button -->
+                <button class="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium hover:shadow-lg transition-all duration-200 hover:scale-105">
+                    View All Shots →
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- <div class="message-section">
-    <div class="result-type" id="result_type">{{ shot.result_type }}</div>
-    <div class="message" id="message">{{ shot.message }}</div>
-</div> -->
-
-<div class="image-gallery">
-    <h2>Shot Images</h2>
-    <div class="image-grid" id="image-grid">
-        {% for image in shot.images %}
-        <img src="/images/{{ image }}" alt="Shot {{ loop.index }}" class="shot-image" loading="lazy">
-        {% endfor %}
+<!-- Session Statistics -->
+<div class="glass rounded-2xl p-6 border border-white/10 mb-8">
+    <h3 class="text-lg font-semibold text-white mb-4">Today's Session Statistics</h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div class="p-4 rounded-xl bg-white/5">
+            <p class="text-xs text-gray-400 mb-1">Total Shots</p>
+            <p class="text-2xl font-bold text-white">47</p>
+            <p class="text-xs text-green-400 mt-1">+12 from avg</p>
+        </div>
+        <div class="p-4 rounded-xl bg-white/5">
+            <p class="text-xs text-gray-400 mb-1">Avg Distance</p>
+            <p class="text-2xl font-bold text-white">234</p>
+            <p class="text-xs text-gray-300 mt-1">yards</p>
+        </div>
+        <div class="p-4 rounded-xl bg-white/5">
+            <p class="text-xs text-gray-400 mb-1">Consistency</p>
+            <p class="text-2xl font-bold text-white">87%</p>
+            <p class="text-xs text-green-400 mt-1">Excellent</p>
+        </div>
+        <div class="p-4 rounded-xl bg-white/5">
+            <p class="text-xs text-gray-400 mb-1">Best Shot</p>
+            <p class="text-2xl font-bold text-white">312</p>
+            <p class="text-xs text-purple-400 mt-1">Personal Best!</p>
+        </div>
+        <div class="p-4 rounded-xl bg-white/5">
+            <p class="text-xs text-gray-400 mb-1">Club Used</p>
+            <p class="text-2xl font-bold text-white">Dr</p>
+            <p class="text-xs text-gray-300 mt-1">Most frequent</p>
+        </div>
+        <div class="p-4 rounded-xl bg-white/5">
+            <p class="text-xs text-gray-400 mb-1">Session Time</p>
+            <p class="text-2xl font-bold text-white">1:24</p>
+            <p class="text-xs text-gray-300 mt-1">hours</p>
+        </div>
     </div>
 </div>
 
-<div class="controls">
-    <button class="btn btn-primary" onclick="resetShot()">Reset</button>
-    <button class="btn btn-secondary" onclick="location.reload()">Refresh</button>
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <button class="glass rounded-xl p-6 border border-purple-500/20 hover:border-purple-500/40 transition-all hover:shadow-xl hover:scale-105 group">
+        <div class="flex items-center space-x-4">
+            <div class="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+            </div>
+            <div class="text-left">
+                <h4 class="text-white font-semibold">New Session</h4>
+                <p class="text-xs text-gray-400">Start practice round</p>
+            </div>
+        </div>
+    </button>
+    
+    <button class="glass rounded-xl p-6 border border-blue-500/20 hover:border-blue-500/40 transition-all hover:shadow-xl hover:scale-105 group">
+        <div class="flex items-center space-x-4">
+            <div class="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+            </div>
+            <div class="text-left">
+                <h4 class="text-white font-semibold">View Reports</h4>
+                <p class="text-xs text-gray-400">Detailed analytics</p>
+            </div>
+        </div>
+    </button>
+    
+    <button class="glass rounded-xl p-6 border border-green-500/20 hover:border-green-500/40 transition-all hover:shadow-xl hover:scale-105 group">
+        <div class="flex items-center space-x-4">
+            <div class="p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V2"></path>
+                </svg>
+            </div>
+            <div class="text-left">
+                <h4 class="text-white font-semibold">Export Data</h4>
+                <p class="text-xs text-gray-400">Download CSV/PDF</p>
+            </div>
+        </div>
+    </button>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/js/dashboard.js"></script>
+<!-- Load the modern dashboard JavaScript that handles real-time updates -->
+<script src="/static/js/dashboard-modern.js"></script>
+<script>
+// Animate numbers on load (keeping original animation)
+document.addEventListener('DOMContentLoaded', function() {
+    const numbers = document.querySelectorAll('[data-number]');
+    numbers.forEach(num => {
+        const finalValue = parseFloat(num.getAttribute('data-number'));
+        let currentValue = 0;
+        const increment = finalValue / 50;
+        const timer = setInterval(() => {
+            currentValue += increment;
+            if (currentValue >= finalValue) {
+                currentValue = finalValue;
+                clearInterval(timer);
+            }
+            num.textContent = currentValue.toFixed(1);
+        }, 20);
+    });
+
+    // Add SVG ID for trajectory updates
+    const trajectorySvg = document.querySelector('.relative.h-64 svg');
+    if (trajectorySvg) {
+        trajectorySvg.id = 'trajectory-svg';
+    }
+
+    // Add recent shots container
+    const recentShotsSection = document.querySelector('.lg\\:col-span-1:last-child .glass');
+    if (recentShotsSection && !document.getElementById('recent-shots-list')) {
+        const container = document.createElement('div');
+        container.id = 'recent-shots-list';
+        container.className = 'space-y-3';
+        const header = recentShotsSection.querySelector('h3');
+        if (header && header.nextSibling) {
+            header.parentNode.insertBefore(container, header.nextSibling);
+        }
+    }
+});
+</script>
 {% endblock %}

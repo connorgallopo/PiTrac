@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="corporate">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PiTrac Launch Monitor{% endblock %}</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    
+    <!-- Local Modern UI CSS (No CDN Required!) -->
+    <link rel="stylesheet" href="/static/css/modern-ui.css">
+    
+    <!-- Icon Font (Embedded) -->
+    <style>
+        /* Basic icon styles using Unicode symbols */
+        .ti:before { 
+            display: inline-block;
+            font-style: normal;
+            font-variant: normal;
+            text-rendering: auto;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Common icons using Unicode */
+        .ti-menu-2:before { content: "☰"; }
+        .ti-x:before { content: "✕"; }
+        .ti-dashboard:before { content: "⊞"; }
+        .ti-adjustments:before { content: "⚙"; }
+        .ti-settings:before { content: "⚙"; }
+        .ti-file-text:before { content: "📄"; }
+        .ti-test-pipe:before { content: "⚗"; }
+        .ti-brand-github:before { content: "⌘"; }
+        .ti-brand-discord:before { content: "💬"; }
+        .ti-external-link:before { content: "↗"; }
+        .ti-sun:before { content: "☀"; }
+        .ti-moon:before { content: "☾"; }
+        .ti-briefcase:before { content: "💼"; }
+        .ti-player-play:before { content: "▶"; }
+        .ti-player-stop:before { content: "■"; }
+        .ti-refresh:before { content: "⟳"; }
+        .ti-golf:before { content: "⛳"; }
+        .ti-activity:before { content: "📊"; }
+        .ti-target-arrow:before { content: "🎯"; }
+        .ti-trending-up:before { content: "📈"; }
+        .ti-arrows-left-right:before { content: "↔"; }
+        .ti-rotate-clockwise:before { content: "↻"; }
+        .ti-rotate-2:before { content: "⤾"; }
+        .ti-chart-line:before { content: "📈"; }
+        .ti-target:before { content: "◎"; }
+        .ti-clock:before { content: "⏱"; }
+        .ti-medal:before { content: "🏆"; }
+        .ti-download:before { content: "⬇"; }
+        .ti-reload:before { content: "⟲"; }
+        .ti-maximize:before { content: "⛶"; }
+        .ti-photo-off:before { content: "🖼"; }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+</head>
+<body>
+    <div class="bg-base-200 flex min-h-screen flex-col">
+        <!-- Header -->
+        <div class="bg-base-100 sticky top-0 z-50 flex lg:ps-72">
+            <div class="mx-auto w-full">
+                <nav class="navbar h-16 px-4 shadow-sm">
+                    <!-- Mobile menu toggle -->
+                    <button
+                        type="button"
+                        class="btn btn-soft btn-square btn-sm me-2 lg:hidden"
+                        aria-haspopup="dialog"
+                        aria-expanded="false"
+                        aria-controls="sidebar-menu"
+                        data-overlay="#sidebar-menu"
+                    >
+                        <i class="ti ti-menu-2 text-xl"></i>
+                    </button>
+                    
+                    <!-- Header Content -->
+                    <div class="flex flex-1 items-center justify-between">
+                        <!-- Left side - Page Title -->
+                        <div class="flex items-center gap-3 lg:hidden">
+                            <img src="/static/logos/PiTrac.svg" alt="PiTrac" class="h-8">
+                        </div>
+                        
+                        <!-- Center - PiTrac Controls -->
+                        <div class="flex items-center gap-2 mx-auto lg:mx-0">
+                            <button id="pitrac-start-btn" 
+                                    class="btn btn-success btn-sm gap-2" 
+                                    onclick="controlPiTrac('start')" 
+                                    title="Start PiTrac">
+                                <i class="ti ti-player-play"></i>
+                                <span class="hidden sm:inline">Start</span>
+                            </button>
+                            <button id="pitrac-stop-btn" 
+                                    class="btn btn-error btn-sm gap-2" 
+                                    onclick="controlPiTrac('stop')" 
+                                    title="Stop PiTrac">
+                                <i class="ti ti-player-stop"></i>
+                                <span class="hidden sm:inline">Stop</span>
+                            </button>
+                            <button id="pitrac-restart-btn" 
+                                    class="btn btn-warning btn-sm gap-2" 
+                                    onclick="controlPiTrac('restart')" 
+                                    title="Restart PiTrac">
+                                <i class="ti ti-refresh"></i>
+                                <span class="hidden sm:inline">Restart</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Right side - Status & Settings -->
+                        <div class="flex items-center gap-3">
+                            <!-- Status Indicators -->
+                            <div class="hidden sm:flex items-center gap-2">
+                                <div class="flex items-center gap-1">
+                                    <div class="indicator">
+                                        <span id="ws-status-dot" class="indicator-item badge badge-xs badge-success"></span>
+                                        <div class="badge badge-ghost badge-sm">WS</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <div class="indicator">
+                                        <span id="mq-status-dot" class="indicator-item badge badge-xs badge-warning"></span>
+                                        <div class="badge badge-ghost badge-sm">MQ</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <div class="indicator">
+                                        <span id="pitrac-status-dot" class="indicator-item badge badge-xs badge-info"></span>
+                                        <div class="badge badge-ghost badge-sm">C1</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1" id="camera2-status-container" style="display: none;">
+                                    <div class="indicator">
+                                        <span id="pitrac-camera2-status-dot" class="indicator-item badge badge-xs badge-info"></span>
+                                        <div class="badge badge-ghost badge-sm">C2</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Timestamp -->
+                            <div class="text-sm text-base-content/60 hidden md:block">
+                                <span id="timestamp">Never</span>
+                            </div>
+                            
+                            <!-- Theme Switcher -->
+                            <div class="dropdown dropdown-end">
+                                <button tabindex="0" class="btn btn-ghost btn-square btn-sm">
+                                    <i class="ti ti-sun text-xl"></i>
+                                </button>
+                                <ul tabindex="0" class="dropdown-menu dropdown-menu-bottom-end w-52 mt-3 p-2 shadow-lg">
+                                    <li><button onclick="setTheme('light')" class="dropdown-item"><i class="ti ti-sun me-2"></i> Light</button></li>
+                                    <li><button onclick="setTheme('dark')" class="dropdown-item"><i class="ti ti-moon me-2"></i> Dark</button></li>
+                                    <li><button onclick="setTheme('corporate')" class="dropdown-item"><i class="ti ti-briefcase me-2"></i> Corporate</button></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Layout with Sidebar -->
+        <div class="flex flex-1">
+            <!-- Sidebar -->
+            <aside
+                id="sidebar-menu"
+                class="overlay overlay-open:translate-x-0 drawer drawer-start fixed inset-y-0 start-0 z-40 h-full w-72 [--auto-close:lg] lg:translate-x-0 lg:static lg:block lg:shadow-none"
+                aria-label="Sidebar"
+                tabindex="-1"
+            >
+                <div class="drawer-body h-full bg-base-100 border-r border-base-200 p-0">
+                    <div class="flex h-full max-h-full flex-col">
+                        <!-- Sidebar Header -->
+                        <div class="flex items-center gap-3 px-6 py-4 border-b border-base-200">
+                            <img src="/static/logos/PiTrac.svg" alt="PiTrac Logo" class="h-10 w-10">
+                            <div>
+                                <h1 class="text-xl font-bold text-primary">PiTrac</h1>
+                                <p class="text-xs text-base-content/60">Launch Monitor System</p>
+                            </div>
+                            <button
+                                type="button"
+                                class="btn btn-ghost btn-sm btn-square ms-auto lg:hidden"
+                                aria-label="Close"
+                                data-overlay="#sidebar-menu"
+                            >
+                                <i class="ti ti-x text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Navigation Menu -->
+                        <div class="flex-1 overflow-y-auto px-3 py-4">
+                            <ul class="menu gap-1">
+                                <!-- Main Navigation -->
+                                <li class="menu-title text-xs text-base-content/60">Main</li>
+                                <li>
+                                    <a href="/" class="menu-item {% if request.path == '/' %}active{% endif %}">
+                                        <i class="ti ti-dashboard"></i>
+                                        <span>Dashboard</span>
+                                    </a>
+                                </li>
+                                
+                                <!-- Configuration -->
+                                <li class="menu-title text-xs text-base-content/60 mt-4">Configuration</li>
+                                <li>
+                                    <a href="/calibration" class="menu-item {% if request.path == '/calibration' %}active{% endif %}">
+                                        <i class="ti ti-adjustments"></i>
+                                        <span>Calibration</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/config" class="menu-item {% if request.path == '/config' %}active{% endif %}">
+                                        <i class="ti ti-settings"></i>
+                                        <span>Settings</span>
+                                    </a>
+                                </li>
+                                
+                                <!-- Tools -->
+                                <li class="menu-title text-xs text-base-content/60 mt-4">Tools</li>
+                                <li>
+                                    <a href="/logs" class="menu-item {% if request.path == '/logs' %}active{% endif %}">
+                                        <i class="ti ti-file-text"></i>
+                                        <span>Logs</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/testing" class="menu-item {% if request.path == '/testing' %}active{% endif %}">
+                                        <i class="ti ti-test-pipe"></i>
+                                        <span>Testing Tools</span>
+                                    </a>
+                                </li>
+                                
+                                <!-- Resources -->
+                                <li class="menu-title text-xs text-base-content/60 mt-4">Resources</li>
+                                <li>
+                                    <a href="https://github.com/jamespilgrim/PiTrac" target="_blank" class="menu-item">
+                                        <i class="ti ti-brand-github"></i>
+                                        <span>GitHub</span>
+                                        <i class="ti ti-external-link ms-auto text-xs"></i>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="https://discord.gg/gMQcBBQYHT" target="_blank" class="menu-item">
+                                        <i class="ti ti-brand-discord"></i>
+                                        <span>Discord</span>
+                                        <i class="ti ti-external-link ms-auto text-xs"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <!-- Sidebar Footer -->
+                        <div class="border-t border-base-200 p-4">
+                            <div class="flex items-center justify-between text-xs text-base-content/60">
+                                <span>© 2025 PiTrac</span>
+                                <span>v1.0.0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 lg:ps-0">
+                <div class="container mx-auto p-6 max-w-7xl">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- FlyonUI JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flyonui@1.3.1/flyonui.min.js"></script>
+    
+    <!-- Common Scripts -->
+    <script src="/static/js/common.js"></script>
+    
+    <!-- Theme Management -->
+    <script>
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        }
+        
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'corporate';
+        setTheme(savedTheme);
+    </script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,256 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Golf Launch Monitor Styles */
+@layer base {
+    :root {
+        /* PiTrac Theme Colors */
+        --color-primary: 22 163 74;
+        --color-secondary: 37 99 235;
+        --color-accent: 168 85 247;
+        --color-success: 34 197 94;
+        --color-warning: 251 146 60;
+        --color-error: 239 68 68;
+        --color-info: 59 130 246;
+        
+        /* Golf Metrics Colors */
+        --color-ball-speed: 236 72 153;
+        --color-launch-angle: 59 130 246;
+        --color-spin-rate: 168 85 247;
+        --color-carry-distance: 34 197 94;
+        --color-total-distance: 16 185 129;
+    }
+
+    html {
+        @apply scroll-smooth;
+    }
+
+    body {
+        @apply antialiased;
+    }
+}
+
+@layer components {
+    /* Professional Golf Dashboard Components */
+    
+    .metric-card {
+        @apply relative overflow-hidden rounded-xl bg-white p-6 shadow-lg 
+               transition-all duration-300 hover:shadow-xl dark:bg-gray-800;
+    }
+    
+    .metric-value {
+        @apply text-4xl font-bold tracking-tight;
+    }
+    
+    .metric-label {
+        @apply text-sm font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400;
+    }
+    
+    .metric-unit {
+        @apply text-lg font-normal text-gray-500 dark:text-gray-400;
+    }
+    
+    .shot-trajectory {
+        @apply relative h-64 w-full rounded-lg bg-gradient-to-b from-sky-100 to-green-100 
+               dark:from-sky-900/20 dark:to-green-900/20;
+    }
+    
+    .status-indicator {
+        @apply relative inline-flex h-3 w-3;
+    }
+    
+    .status-indicator-pulse {
+        @apply absolute inline-flex h-full w-full animate-ping rounded-full opacity-75;
+    }
+    
+    .status-indicator-dot {
+        @apply relative inline-flex h-3 w-3 rounded-full;
+    }
+    
+    /* Launch Monitor Specific Components */
+    .launch-data-grid {
+        @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+    }
+    
+    .trajectory-canvas {
+        @apply relative w-full overflow-hidden rounded-xl 
+               bg-gradient-to-b from-sky-50 via-sky-100 to-emerald-100
+               dark:from-gray-900 dark:via-gray-800 dark:to-gray-900;
+        padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    }
+    
+    .club-selector {
+        @apply flex gap-2 overflow-x-auto pb-2 scrollbar-thin;
+    }
+    
+    .club-button {
+        @apply flex-shrink-0 rounded-lg px-4 py-2 font-medium 
+               transition-all duration-200 hover:scale-105;
+    }
+    
+    .club-button-active {
+        @apply bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg;
+    }
+    
+    .club-button-inactive {
+        @apply bg-gray-100 text-gray-700 hover:bg-gray-200 
+               dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600;
+    }
+    
+    /* Shot History Timeline */
+    .shot-timeline {
+        @apply relative space-y-4 before:absolute before:left-4 before:top-8 
+               before:h-full before:w-0.5 before:bg-gray-200 dark:before:bg-gray-700;
+    }
+    
+    .shot-timeline-item {
+        @apply relative flex items-start gap-4 rounded-lg p-4 
+               transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50;
+    }
+    
+    .shot-timeline-marker {
+        @apply z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center 
+               rounded-full bg-white shadow-md ring-4 ring-white 
+               dark:bg-gray-800 dark:ring-gray-900;
+    }
+    
+    /* Real-time Data Display */
+    .realtime-metric {
+        @apply relative overflow-hidden rounded-lg border border-gray-200 
+               bg-white p-4 dark:border-gray-700 dark:bg-gray-800;
+    }
+    
+    .realtime-metric-bar {
+        @apply absolute bottom-0 left-0 h-1 bg-gradient-to-r transition-all duration-500;
+    }
+    
+    /* Golf-specific Gradients */
+    .gradient-fairway {
+        @apply bg-gradient-to-br from-green-400 via-emerald-500 to-green-600;
+    }
+    
+    .gradient-rough {
+        @apply bg-gradient-to-br from-amber-600 via-yellow-700 to-amber-800;
+    }
+    
+    .gradient-bunker {
+        @apply bg-gradient-to-br from-yellow-200 via-amber-300 to-yellow-400;
+    }
+    
+    .gradient-water {
+        @apply bg-gradient-to-br from-blue-400 via-cyan-500 to-blue-600;
+    }
+    
+    /* Animation Classes */
+    .animate-ball-flight {
+        animation: ballFlight 2s ease-out infinite;
+    }
+    
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+    
+    .animate-fade-up {
+        animation: fadeUp 0.5s ease-out;
+    }
+}
+
+@layer utilities {
+    /* Custom Utilities for Golf UI */
+    .text-shadow-sm {
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .text-shadow-md {
+        text-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .text-shadow-lg {
+        text-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar {
+        height: 8px;
+        width: 8px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-track {
+        @apply rounded-full bg-gray-100 dark:bg-gray-800;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        @apply rounded-full bg-gray-400 dark:bg-gray-600;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+        @apply bg-gray-500 dark:bg-gray-500;
+    }
+}
+
+/* Keyframe Animations */
+@keyframes ballFlight {
+    0% {
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(200px, -100px);
+    }
+    100% {
+        transform: translate(400px, 0);
+        opacity: 0.3;
+    }
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Golf Ball Trace Animation */
+@keyframes traceShot {
+    0% {
+        stroke-dashoffset: 1000;
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    100% {
+        stroke-dashoffset: 0;
+        opacity: 1;
+    }
+}
+
+/* High-contrast mode for outdoor visibility */
+@media (prefers-contrast: high) {
+    .metric-value {
+        @apply font-black;
+    }
+    
+    .metric-card {
+        @apply border-2 border-gray-900 dark:border-white;
+    }
+}
+
+/* Print styles for shot reports */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .metric-card {
+        @apply break-inside-avoid;
+    }
+    
+    .shot-trajectory {
+        @apply h-48;
+    }
+}

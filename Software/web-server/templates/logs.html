@@ -1,76 +1,476 @@
 {% extends "base.html" %}
 
-{% block title %}PiTrac Logs{% endblock %}
+{% block title %}PiTrac Launch Monitor - System Logs{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/logs.css">
-{% endblock %}
+{% block page_title %}System Logs{% endblock %}
 
 {% block content %}
-<div class="logs-container">
-    <div class="logs-header">
-        <div class="logs-controls-row">
-            <div class="service-selector">
-                <label for="serviceSelect">Service:</label>
-                <select id="serviceSelect" onchange="changeService()">
-                    <option value="">Loading services...</option>
+<!-- Log Viewer Container -->
+<div class="glass rounded-2xl p-6 border border-white/10">
+    <!-- Controls Bar -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 space-y-4 lg:space-y-0">
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Log Level Filter -->
+            <div class="flex items-center space-x-2">
+                <label class="text-sm text-gray-400">Level:</label>
+                <select id="log-level-filter" class="px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-600 text-white text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors">
+                    <option value="all">All Levels</option>
+                    <option value="error">Error</option>
+                    <option value="warning">Warning</option>
+                    <option value="info">Info</option>
+                    <option value="debug">Debug</option>
+                    <option value="verbose">Verbose</option>
                 </select>
             </div>
             
-            <div class="service-info">
-                <span id="serviceStatus" class="service-status" style="display: none;"></span>
-                <div class="connection-status">
-                    <span class="status-indicator disconnected" id="connectionIndicator"></span>
-                    <span id="connectionText">Disconnected</span>
-                </div>
+            <!-- Source Filter -->
+            <div class="flex items-center space-x-2">
+                <label class="text-sm text-gray-400">Source:</label>
+                <select id="log-source-filter" class="px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-600 text-white text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors">
+                    <option value="all">All Sources</option>
+                    <option value="system">System</option>
+                    <option value="camera1">Camera 1</option>
+                    <option value="camera2">Camera 2</option>
+                    <option value="analysis">Analysis</option>
+                    <option value="network">Network</option>
+                </select>
             </div>
             
-            <div class="logs-actions">
-                <button id="pauseButton" class="action-btn" onclick="togglePause()">
-                    <svg fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M6 3.5a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5zm4 0a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-1 0V4a.5.5 0 0 1 .5-.5z"/>
-                    </svg>
-                    <span class="btn-text">Pause</span>
-                </button>
-                <button id="clearButton" class="action-btn danger" onclick="clearLogs()">
-                    <svg fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                        <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                    </svg>
-                    <span class="btn-text">Clear</span>
-                </button>
-                <button class="action-btn" onclick="downloadLogs()">
-                    <svg fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                    </svg>
-                    <span class="btn-text">Download</span>
-                </button>
+            <!-- Search -->
+            <div class="relative">
+                <input type="text" id="log-search" placeholder="Search logs..." 
+                       class="px-3 py-1.5 pr-8 rounded-lg bg-gray-800 border border-gray-600 text-white text-sm placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors">
+                <svg class="absolute right-2 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex items-center space-x-2">
+            <button onclick="clearLogs()" class="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors">
+                Clear Logs
+            </button>
+            <button onclick="exportLogs()" class="px-4 py-1.5 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors">
+                Export
+            </button>
+            <button id="pause-btn" onclick="togglePause()" class="px-4 py-1.5 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-lg transition-colors">
+                Pause
+            </button>
+            <div class="flex items-center space-x-1">
+                <div id="live-indicator" class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span id="live-text" class="text-xs text-green-400">Live</span>
             </div>
         </div>
     </div>
     
-    <div class="log-viewer-wrapper">
-        <div class="log-viewer empty" id="logViewer"></div>
-        
-        <div class="log-stats">
-            <div class="stat-item">
-                <span class="stat-label">Lines:</span>
-                <span class="stat-value" id="lineCount">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Errors:</span>
-                <span class="stat-value" id="errorCount">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Warnings:</span>
-                <span class="stat-value" id="warningCount">0</span>
+    <!-- Log Statistics -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="glass rounded-lg p-3 border border-red-500/20">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-400">Errors</span>
+                </div>
+                <span id="error-count" class="text-lg font-bold text-white">0</span>
             </div>
         </div>
+        
+        <div class="glass rounded-lg p-3 border border-yellow-500/20">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-400">Warnings</span>
+                </div>
+                <span id="warning-count" class="text-lg font-bold text-white">0</span>
+            </div>
+        </div>
+        
+        <div class="glass rounded-lg p-3 border border-blue-500/20">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-400">Info</span>
+                </div>
+                <span id="info-count" class="text-lg font-bold text-white">0</span>
+            </div>
+        </div>
+        
+        <div class="glass rounded-lg p-3 border border-gray-500/20">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-gray-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-400">Total</span>
+                </div>
+                <span id="total-count" class="text-lg font-bold text-white">0</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Log Viewer -->
+    <div class="glass rounded-xl border border-white/10 overflow-hidden">
+        <div class="bg-black/50 p-4">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-medium text-gray-300">System Log Output</h3>
+                <div class="flex items-center space-x-2">
+                    <label class="text-xs text-gray-400">Auto-scroll:</label>
+                    <input type="checkbox" id="auto-scroll" checked class="sr-only peer">
+                    <div class="relative w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                </div>
+            </div>
+            
+            <!-- Log Content -->
+            <div id="log-container" class="bg-black rounded-lg p-4 h-96 overflow-y-auto font-mono text-xs">
+                <!-- Logs will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <button onclick="downloadFullLog()" class="glass rounded-xl p-4 border border-white/10 hover:border-purple-500/40 transition-all group">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path>
+                    </svg>
+                </div>
+                <div class="text-left">
+                    <p class="text-white font-medium">Download Full Log</p>
+                    <p class="text-xs text-gray-400">Get complete log history</p>
+                </div>
+            </div>
+        </button>
+        
+        <button onclick="openLogSettings()" class="glass rounded-xl p-4 border border-white/10 hover:border-blue-500/40 transition-all group">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </div>
+                <div class="text-left">
+                    <p class="text-white font-medium">Log Settings</p>
+                    <p class="text-xs text-gray-400">Configure log preferences</p>
+                </div>
+            </div>
+        </button>
+        
+        <button onclick="viewArchives()" class="glass rounded-xl p-4 border border-white/10 hover:border-green-500/40 transition-all group">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                    </svg>
+                </div>
+                <div class="text-left">
+                    <p class="text-white font-medium">View Archives</p>
+                    <p class="text-xs text-gray-400">Browse historical logs</p>
+                </div>
+            </div>
+        </button>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/js/logs.js"></script>
+<script>
+let isPaused = false;
+let logBuffer = [];
+let errorCount = 0;
+let warningCount = 0;
+let infoCount = 0;
+let totalCount = 0;
+let ws = null;
+
+// Log level colors
+const logLevelColors = {
+    'ERROR': 'text-red-400',
+    'WARNING': 'text-yellow-400',
+    'INFO': 'text-blue-400',
+    'DEBUG': 'text-gray-400',
+    'VERBOSE': 'text-gray-500',
+    'SUCCESS': 'text-green-400'
+};
+
+// Connect to WebSocket for real-time logs
+function connectLogStream() {
+    ws = new WebSocket('ws://localhost:8081/logs');
+    
+    ws.onopen = () => {
+        console.log('Log stream connected');
+        addLogEntry('INFO', 'System', 'Log stream connected');
+    };
+    
+    ws.onmessage = (event) => {
+        const logData = JSON.parse(event.data);
+        if (!isPaused) {
+            addLogEntry(logData.level, logData.source, logData.message, logData.timestamp);
+        } else {
+            logBuffer.push(logData);
+        }
+    };
+    
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        addLogEntry('ERROR', 'System', 'Log stream connection error');
+    };
+    
+    ws.onclose = () => {
+        console.log('Log stream disconnected');
+        addLogEntry('WARNING', 'System', 'Log stream disconnected - attempting reconnect...');
+        setTimeout(connectLogStream, 5000);
+    };
+}
+
+// Add log entry to the viewer
+function addLogEntry(level, source, message, timestamp = null) {
+    const container = document.getElementById('log-container');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry mb-1';
+    
+    const time = timestamp || new Date().toISOString();
+    const levelColor = logLevelColors[level] || 'text-gray-400';
+    
+    entry.innerHTML = `
+        <span class="text-gray-600">[${time.split('T')[1].split('.')[0]}]</span>
+        <span class="${levelColor} font-medium">[${level}]</span>
+        <span class="text-cyan-400">[${source}]</span>
+        <span class="text-gray-300">${escapeHtml(message)}</span>
+    `;
+    
+    entry.dataset.level = level.toLowerCase();
+    entry.dataset.source = source.toLowerCase();
+    
+    container.appendChild(entry);
+    
+    // Update counters
+    updateCounters(level);
+    
+    // Auto-scroll if enabled
+    if (document.getElementById('auto-scroll').checked && !isPaused) {
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    // Limit entries to prevent memory issues
+    if (container.children.length > 1000) {
+        container.removeChild(container.firstChild);
+    }
+}
+
+// Update log counters
+function updateCounters(level) {
+    totalCount++;
+    document.getElementById('total-count').textContent = totalCount;
+    
+    switch(level) {
+        case 'ERROR':
+            errorCount++;
+            document.getElementById('error-count').textContent = errorCount;
+            break;
+        case 'WARNING':
+            warningCount++;
+            document.getElementById('warning-count').textContent = warningCount;
+            break;
+        case 'INFO':
+            infoCount++;
+            document.getElementById('info-count').textContent = infoCount;
+            break;
+    }
+}
+
+// Filter logs
+function filterLogs() {
+    const levelFilter = document.getElementById('log-level-filter').value;
+    const sourceFilter = document.getElementById('log-source-filter').value;
+    const searchTerm = document.getElementById('log-search').value.toLowerCase();
+    
+    const entries = document.querySelectorAll('.log-entry');
+    entries.forEach(entry => {
+        let show = true;
+        
+        if (levelFilter !== 'all' && entry.dataset.level !== levelFilter) {
+            show = false;
+        }
+        
+        if (sourceFilter !== 'all' && entry.dataset.source !== sourceFilter) {
+            show = false;
+        }
+        
+        if (searchTerm && !entry.textContent.toLowerCase().includes(searchTerm)) {
+            show = false;
+        }
+        
+        entry.style.display = show ? 'block' : 'none';
+    });
+}
+
+// Toggle pause
+function togglePause() {
+    isPaused = !isPaused;
+    const btn = document.getElementById('pause-btn');
+    const indicator = document.getElementById('live-indicator');
+    const text = document.getElementById('live-text');
+    
+    if (isPaused) {
+        btn.textContent = 'Resume';
+        btn.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+        btn.classList.add('bg-green-600', 'hover:bg-green-700');
+        indicator.classList.remove('bg-green-500', 'animate-pulse');
+        indicator.classList.add('bg-yellow-500');
+        text.textContent = 'Paused';
+        text.classList.remove('text-green-400');
+        text.classList.add('text-yellow-400');
+        
+        // Show buffered count
+        if (logBuffer.length > 0) {
+            text.textContent = `Paused (${logBuffer.length} buffered)`;
+        }
+    } else {
+        btn.textContent = 'Pause';
+        btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+        btn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+        indicator.classList.remove('bg-yellow-500');
+        indicator.classList.add('bg-green-500', 'animate-pulse');
+        text.textContent = 'Live';
+        text.classList.remove('text-yellow-400');
+        text.classList.add('text-green-400');
+        
+        // Process buffered logs
+        logBuffer.forEach(log => {
+            addLogEntry(log.level, log.source, log.message, log.timestamp);
+        });
+        logBuffer = [];
+    }
+}
+
+// Clear logs
+function clearLogs() {
+    if (confirm('Are you sure you want to clear all displayed logs?')) {
+        document.getElementById('log-container').innerHTML = '';
+        errorCount = 0;
+        warningCount = 0;
+        infoCount = 0;
+        totalCount = 0;
+        document.getElementById('error-count').textContent = '0';
+        document.getElementById('warning-count').textContent = '0';
+        document.getElementById('info-count').textContent = '0';
+        document.getElementById('total-count').textContent = '0';
+        addLogEntry('INFO', 'System', 'Log display cleared');
+    }
+}
+
+// Export logs
+function exportLogs() {
+    const entries = document.querySelectorAll('.log-entry');
+    let logText = '';
+    entries.forEach(entry => {
+        logText += entry.textContent + '\n';
+    });
+    
+    const blob = new Blob([logText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pitrac_logs_${new Date().toISOString()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Download full log
+function downloadFullLog() {
+    // This would fetch the complete log file from the server
+    window.location.href = '/api/logs/download';
+}
+
+// Open log settings
+function openLogSettings() {
+    window.location.href = '/config#advanced';
+}
+
+// View archives
+function viewArchives() {
+    alert('Log archives viewer would open here');
+}
+
+// Escape HTML
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// Simulate log entries for demo
+function simulateLogs() {
+    const levels = ['INFO', 'DEBUG', 'WARNING', 'ERROR', 'VERBOSE'];
+    const sources = ['System', 'Camera1', 'Camera2', 'Analysis', 'Network'];
+    const messages = [
+        'Processing frame #',
+        'Ball detected at position',
+        'Calculating trajectory',
+        'Network latency:',
+        'Camera calibration stable',
+        'Shot recorded successfully',
+        'WebSocket client connected',
+        'Memory usage at',
+        'CPU temperature:',
+        'Frame rate:'
+    ];
+    
+    setInterval(() => {
+        if (!isPaused && Math.random() > 0.3) {
+            const level = levels[Math.floor(Math.random() * levels.length)];
+            const source = sources[Math.floor(Math.random() * sources.length)];
+            const message = messages[Math.floor(Math.random() * messages.length)] + ' ' + Math.floor(Math.random() * 1000);
+            
+            addLogEntry(level, source, message);
+        }
+    }, 500 + Math.random() * 2000);
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    // Try to connect to WebSocket
+    try {
+        connectLogStream();
+    } catch (e) {
+        console.log('WebSocket not available, using simulation');
+        simulateLogs();
+    }
+    
+    // Set up filters
+    document.getElementById('log-level-filter').addEventListener('change', filterLogs);
+    document.getElementById('log-source-filter').addEventListener('change', filterLogs);
+    document.getElementById('log-search').addEventListener('input', filterLogs);
+    
+    // Add some initial log entries
+    addLogEntry('INFO', 'System', 'PiTrac Launch Monitor initialized');
+    addLogEntry('SUCCESS', 'Camera1', 'Camera 1 connected and ready');
+    addLogEntry('SUCCESS', 'Camera2', 'Camera 2 connected and ready');
+    addLogEntry('INFO', 'Network', 'WebSocket server listening on port 8081');
+    addLogEntry('INFO', 'System', 'Ready for shot detection');
+});
+</script>
 {% endblock %}

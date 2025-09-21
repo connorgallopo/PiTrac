@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}PiTrac Launch Monitor - Shot Analysis{% endblock %}
+
+{% block page_title %}Shot Analysis{% endblock %}
+
+{% block content %}
+<!-- Live Shot Display -->
+<div class="glass rounded-2xl p-6 border border-white/10 mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h3 class="text-xl font-semibold text-white">Current Shot</h3>
+        <div class="flex items-center space-x-2">
+            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            <span class="text-sm text-green-400">Live Tracking</span>
+        </div>
+    </div>
+    
+    <!-- Primary Metrics Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+        <div class="glass rounded-xl p-4 border border-purple-500/20">
+            <p class="text-xs text-gray-400 mb-1">Ball Speed</p>
+            <p class="text-2xl font-bold text-white">
+                <span id="ball-speed">167.4</span>
+                <span class="text-sm text-gray-400">mph</span>
+            </p>
+        </div>
+        <div class="glass rounded-xl p-4 border border-blue-500/20">
+            <p class="text-xs text-gray-400 mb-1">Club Speed</p>
+            <p class="text-2xl font-bold text-white">
+                <span id="club-speed">112.3</span>
+                <span class="text-sm text-gray-400">mph</span>
+            </p>
+        </div>
+        <div class="glass rounded-xl p-4 border border-green-500/20">
+            <p class="text-xs text-gray-400 mb-1">Launch Angle</p>
+            <p class="text-2xl font-bold text-white">
+                <span id="launch-angle">13.2</span>
+                <span class="text-sm text-gray-400">°</span>
+            </p>
+        </div>
+        <div class="glass rounded-xl p-4 border border-orange-500/20">
+            <p class="text-xs text-gray-400 mb-1">Spin Rate</p>
+            <p class="text-2xl font-bold text-white">
+                <span id="spin-rate">2847</span>
+                <span class="text-sm text-gray-400">rpm</span>
+            </p>
+        </div>
+        <div class="glass rounded-xl p-4 border border-pink-500/20">
+            <p class="text-xs text-gray-400 mb-1">Carry</p>
+            <p class="text-2xl font-bold text-white">
+                <span id="carry-distance">278</span>
+                <span class="text-sm text-gray-400">yds</span>
+            </p>
+        </div>
+        <div class="glass rounded-xl p-4 border border-cyan-500/20">
+            <p class="text-xs text-gray-400 mb-1">Total</p>
+            <p class="text-2xl font-bold text-white">
+                <span id="total-distance">295</span>
+                <span class="text-sm text-gray-400">yds</span>
+            </p>
+        </div>
+    </div>
+    
+    <!-- Shot Shape Visualization -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Face View -->
+        <div class="glass rounded-xl p-4 border border-white/10">
+            <h4 class="text-sm font-medium text-gray-300 mb-3">Face View</h4>
+            <div class="relative h-48 bg-gradient-to-b from-blue-900/20 to-transparent rounded-lg">
+                <svg class="w-full h-full">
+                    <!-- Grid -->
+                    <line x1="50%" y1="0" x2="50%" y2="100%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                    <line x1="0" y1="50%" x2="100%" y2="50%" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                    <!-- Ball path -->
+                    <path id="face-path" d="M 50% 90% Q 48% 45% 52% 10%" 
+                          stroke="url(#pathGradient)" stroke-width="2" fill="none" opacity="0.8"/>
+                    <defs>
+                        <linearGradient id="pathGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+                            <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Ball position -->
+                    <circle cx="50%" cy="90%" r="4" fill="#22c55e"/>
+                </svg>
+                <div class="absolute bottom-2 left-2 text-xs">
+                    <span class="text-gray-400">Curve: </span>
+                    <span class="text-white font-medium" id="face-curve">2.3° Right</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Top View -->
+        <div class="glass rounded-xl p-4 border border-white/10">
+            <h4 class="text-sm font-medium text-gray-300 mb-3">Top View</h4>
+            <div class="relative h-48 bg-gradient-to-r from-transparent via-blue-900/10 to-transparent rounded-lg">
+                <svg class="w-full h-full">
+                    <!-- Center line -->
+                    <line x1="10%" y1="50%" x2="90%" y2="50%" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="5,5"/>
+                    <!-- Ball path -->
+                    <path id="top-path" d="M 10% 50% Q 50% 45% 90% 48%" 
+                          stroke="url(#pathGradient2)" stroke-width="2" fill="none" opacity="0.8"/>
+                    <defs>
+                        <linearGradient id="pathGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Ball positions -->
+                    <circle cx="10%" cy="50%" r="4" fill="#22c55e"/>
+                    <circle cx="90%" cy="48%" r="3" fill="#ec4899"/>
+                </svg>
+                <div class="absolute bottom-2 left-2 text-xs">
+                    <span class="text-gray-400">Side Spin: </span>
+                    <span class="text-white font-medium" id="side-spin">+124 rpm</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Metrics -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <!-- Club Data -->
+    <div class="glass rounded-2xl p-6 border border-white/10">
+        <h3 class="text-lg font-semibold text-white mb-4">Club Data</h3>
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400">Smash Factor</span>
+                <span class="text-lg font-bold text-white" id="smash-factor">1.49</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400">Attack Angle</span>
+                <span class="text-lg font-bold text-white"><span id="attack-angle">-2.3</span>°</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400">Club Path</span>
+                <span class="text-lg font-bold text-white"><span id="club-path">+1.2</span>°</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400">Face Angle</span>
+                <span class="text-lg font-bold text-white"><span id="face-angle">+0.8</span>°</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400">Dynamic Loft</span>
+                <span class="text-lg font-bold text-white"><span id="dynamic-loft">11.2</span>°</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ball Data -->
+    <div class="glass rounded-2xl p-6 border border-white/10">
+        <h3 class="text-lg font-semibold text-white mb-4">Ball Data</h3>
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400">Apex Height</span>
+                <span class="text-lg font-bold text-white"><span id="apex-height">98</span> ft</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400">Flight Time</span>
+                <span class="text-lg font-bold text-white"><span id="flight-time">6.2</span> s</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400">Landing Angle</span>
+                <span class="text-lg font-bold text-white"><span id="landing-angle">42</span>°</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400">Spin Axis</span>
+                <span class="text-lg font-bold text-white"><span id="spin-axis">-2.5</span>°</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-400">Offline</span>
+                <span class="text-lg font-bold text-white"><span id="offline">+8.2</span> yds</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Shot Quality -->
+    <div class="glass rounded-2xl p-6 border border-white/10">
+        <h3 class="text-lg font-semibold text-white mb-4">Shot Quality</h3>
+        <div class="space-y-4">
+            <!-- Overall Score -->
+            <div class="text-center mb-4">
+                <div class="relative inline-flex items-center justify-center">
+                    <svg class="w-32 h-32">
+                        <circle cx="64" cy="64" r="60" stroke="rgba(255,255,255,0.1)" stroke-width="8" fill="none"/>
+                        <circle cx="64" cy="64" r="60" stroke="url(#scoreGradient)" stroke-width="8" fill="none"
+                                stroke-dasharray="377" stroke-dashoffset="94" stroke-linecap="round"
+                                transform="rotate(-90 64 64)"/>
+                        <defs>
+                            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="absolute">
+                        <p class="text-3xl font-bold text-white" id="shot-score">92</p>
+                        <p class="text-xs text-gray-400">Score</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quality Metrics -->
+            <div class="space-y-2">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-400">Contact</span>
+                    <span class="text-green-400">Excellent</span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-1.5">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-1.5 rounded-full" style="width: 95%"></div>
+                </div>
+                
+                <div class="flex justify-between text-xs mt-3">
+                    <span class="text-gray-400">Efficiency</span>
+                    <span class="text-blue-400">Good</span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-1.5">
+                    <div class="bg-gradient-to-r from-blue-500 to-cyan-500 h-1.5 rounded-full" style="width: 82%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Shot History -->
+<div class="glass rounded-2xl p-6 border border-white/10">
+    <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-semibold text-white">Shot History</h3>
+        <div class="flex space-x-2">
+            <button onclick="filterShots('all')" class="px-3 py-1 rounded-lg bg-purple-600 text-white text-sm font-medium transition-colors">All</button>
+            <button onclick="filterShots('driver')" class="px-3 py-1 rounded-lg bg-white/10 text-gray-300 hover:bg-white/20 text-sm font-medium transition-colors">Driver</button>
+            <button onclick="filterShots('iron')" class="px-3 py-1 rounded-lg bg-white/10 text-gray-300 hover:bg-white/20 text-sm font-medium transition-colors">Irons</button>
+            <button onclick="filterShots('wedge')" class="px-3 py-1 rounded-lg bg-white/10 text-gray-300 hover:bg-white/20 text-sm font-medium transition-colors">Wedges</button>
+        </div>
+    </div>
+    
+    <!-- Shot Table -->
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="text-left border-b border-white/10">
+                    <th class="pb-3 text-xs font-medium text-gray-400">Time</th>
+                    <th class="pb-3 text-xs font-medium text-gray-400">Club</th>
+                    <th class="pb-3 text-xs font-medium text-gray-400">Ball Speed</th>
+                    <th class="pb-3 text-xs font-medium text-gray-400">Launch</th>
+                    <th class="pb-3 text-xs font-medium text-gray-400">Spin</th>
+                    <th class="pb-3 text-xs font-medium text-gray-400">Carry</th>
+                    <th class="pb-3 text-xs font-medium text-gray-400">Total</th>
+                    <th class="pb-3 text-xs font-medium text-gray-400">Score</th>
+                </tr>
+            </thead>
+            <tbody id="shot-history-table">
+                <tr class="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer">
+                    <td class="py-3 text-sm text-gray-300">2:34 PM</td>
+                    <td class="py-3 text-sm text-white font-medium">Driver</td>
+                    <td class="py-3 text-sm text-white">167.4</td>
+                    <td class="py-3 text-sm text-white">13.2°</td>
+                    <td class="py-3 text-sm text-white">2,847</td>
+                    <td class="py-3 text-sm text-white">278</td>
+                    <td class="py-3 text-sm text-white">295</td>
+                    <td class="py-3">
+                        <span class="px-2 py-1 rounded-full bg-green-500/20 text-green-400 text-xs font-medium">92</span>
+                    </td>
+                </tr>
+                <tr class="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer">
+                    <td class="py-3 text-sm text-gray-300">2:32 PM</td>
+                    <td class="py-3 text-sm text-white font-medium">7 Iron</td>
+                    <td class="py-3 text-sm text-white">128.3</td>
+                    <td class="py-3 text-sm text-white">18.7°</td>
+                    <td class="py-3 text-sm text-white">6,234</td>
+                    <td class="py-3 text-sm text-white">172</td>
+                    <td class="py-3 text-sm text-white">178</td>
+                    <td class="py-3">
+                        <span class="px-2 py-1 rounded-full bg-blue-500/20 text-blue-400 text-xs font-medium">85</span>
+                    </td>
+                </tr>
+                <tr class="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer">
+                    <td class="py-3 text-sm text-gray-300">2:28 PM</td>
+                    <td class="py-3 text-sm text-white font-medium">PW</td>
+                    <td class="py-3 text-sm text-white">94.2</td>
+                    <td class="py-3 text-sm text-white">28.4°</td>
+                    <td class="py-3 text-sm text-white">8,923</td>
+                    <td class="py-3 text-sm text-white">125</td>
+                    <td class="py-3 text-sm text-white">128</td>
+                    <td class="py-3">
+                        <span class="px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-medium">78</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Update metrics in real-time
+let ws = null;
+
+function connectWebSocket() {
+    ws = new WebSocket('ws://localhost:8081');
+    
+    ws.onopen = () => {
+        console.log('Golf dashboard WebSocket connected');
+    };
+    
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'shot_data') {
+            updateShotData(data);
+        }
+    };
+    
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+    
+    ws.onclose = () => {
+        setTimeout(connectWebSocket, 3000);
+    };
+}
+
+function updateShotData(data) {
+    // Update all the metrics with animation
+    animateValue('ball-speed', data.ballSpeed);
+    animateValue('club-speed', data.clubSpeed);
+    animateValue('launch-angle', data.launchAngle);
+    animateValue('spin-rate', data.spinRate);
+    animateValue('carry-distance', data.carryDistance);
+    animateValue('total-distance', data.totalDistance);
+    
+    // Update advanced metrics
+    animateValue('smash-factor', data.smashFactor);
+    animateValue('attack-angle', data.attackAngle);
+    animateValue('club-path', data.clubPath);
+    animateValue('face-angle', data.faceAngle);
+    animateValue('apex-height', data.apexHeight);
+    animateValue('flight-time', data.flightTime);
+    
+    // Update shot quality score
+    updateShotScore(data.score);
+    
+    // Update visualizations
+    updateBallPath(data);
+}
+
+function animateValue(id, value) {
+    const element = document.getElementById(id);
+    if (!element) return;
+    
+    const current = parseFloat(element.textContent) || 0;
+    const target = parseFloat(value) || 0;
+    const diff = target - current;
+    const steps = 20;
+    let step = 0;
+    
+    const timer = setInterval(() => {
+        step++;
+        const newValue = current + (diff * step / steps);
+        element.textContent = newValue.toFixed(1);
+        
+        if (step >= steps) {
+            clearInterval(timer);
+            element.textContent = target.toFixed(1);
+        }
+    }, 30);
+}
+
+function updateShotScore(score) {
+    const element = document.getElementById('shot-score');
+    if (element) {
+        element.textContent = score;
+        
+        // Update circle progress
+        const circle = document.querySelector('#scoreGradient').parentElement;
+        if (circle) {
+            const circumference = 2 * Math.PI * 60;
+            const offset = circumference - (score / 100 * circumference);
+            circle.style.strokeDashoffset = offset;
+        }
+    }
+}
+
+function updateBallPath(data) {
+    // Update face view path
+    const facePath = document.getElementById('face-path');
+    if (facePath && data.curve) {
+        const curveAmount = 50 + (data.curve * 2); // Convert to percentage
+        facePath.setAttribute('d', `M 50% 90% Q ${curveAmount}% 45% 52% 10%`);
+    }
+    
+    // Update top view path
+    const topPath = document.getElementById('top-path');
+    if (topPath && data.sideSpin) {
+        const sideAmount = 50 + (data.sideSpin / 100); // Convert to percentage
+        topPath.setAttribute('d', `M 10% 50% Q 50% ${sideAmount}% 90% 48%`);
+    }
+}
+
+function filterShots(type) {
+    // Update button styles
+    const buttons = document.querySelectorAll('button[onclick^="filterShots"]');
+    buttons.forEach(btn => {
+        btn.classList.remove('bg-purple-600', 'text-white');
+        btn.classList.add('bg-white/10', 'text-gray-300', 'hover:bg-white/20');
+    });
+    
+    event.target.classList.remove('bg-white/10', 'text-gray-300', 'hover:bg-white/20');
+    event.target.classList.add('bg-purple-600', 'text-white');
+    
+    // Filter table rows
+    const rows = document.querySelectorAll('#shot-history-table tr');
+    rows.forEach(row => {
+        if (type === 'all') {
+            row.style.display = '';
+        } else {
+            const club = row.cells[1]?.textContent?.toLowerCase() || '';
+            if (type === 'driver' && club.includes('driver')) {
+                row.style.display = '';
+            } else if (type === 'iron' && (club.includes('iron') || /\d/.test(club))) {
+                row.style.display = '';
+            } else if (type === 'wedge' && (club.includes('w') || club.includes('wedge'))) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        }
+    });
+}
+
+// Simulate real-time data updates for demo
+function simulateData() {
+    const data = {
+        type: 'shot_data',
+        ballSpeed: 160 + Math.random() * 20,
+        clubSpeed: 105 + Math.random() * 15,
+        launchAngle: 10 + Math.random() * 8,
+        spinRate: 2500 + Math.random() * 1000,
+        carryDistance: 250 + Math.random() * 50,
+        totalDistance: 270 + Math.random() * 50,
+        smashFactor: 1.45 + Math.random() * 0.1,
+        attackAngle: -3 + Math.random() * 6,
+        clubPath: -2 + Math.random() * 4,
+        faceAngle: -1 + Math.random() * 2,
+        apexHeight: 80 + Math.random() * 40,
+        flightTime: 5 + Math.random() * 2,
+        score: Math.floor(70 + Math.random() * 30),
+        curve: -5 + Math.random() * 10,
+        sideSpin: -200 + Math.random() * 400
+    };
+    
+    updateShotData(data);
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', () => {
+    // Try to connect to WebSocket, fall back to simulation if not available
+    try {
+        connectWebSocket();
+    } catch (e) {
+        console.log('WebSocket not available, using simulation');
+        // Simulate data updates every 5 seconds
+        setInterval(simulateData, 5000);
+    }
+});
+</script>
+{% endblock %}

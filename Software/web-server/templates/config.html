@@ -1,75 +1,412 @@
 {% extends "base.html" %}
 
-{% block title %}PiTrac Configuration{% endblock %}
+{% block title %}PiTrac Launch Monitor - Configuration{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/config.css">
-{% endblock %}
+{% block page_title %}Settings{% endblock %}
 
 {% block content %}
-<div class="status-bar">
-    <div class="status-left">
-        <div class="config-status-indicator">
-            <span class="config-status-label">Modified:</span>
-            <span class="config-status-value" id="modifiedCount">0</span>
-        </div>
-        <div id="statusMessage" class="status-message"></div>
+<!-- Configuration Container -->
+<div class="glass rounded-2xl p-6 border border-white/10">
+    <!-- Tab Navigation -->
+    <div class="border-b border-white/10 mb-6">
+        <nav class="-mb-px flex space-x-8 overflow-x-auto">
+            <button onclick="switchTab('general')" id="tab-general" class="tab-btn py-3 px-1 border-b-2 border-purple-500 font-medium text-sm text-white whitespace-nowrap">
+                General Settings
+            </button>
+            <button onclick="switchTab('camera')" id="tab-camera" class="tab-btn py-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-400 hover:text-white hover:border-gray-400 whitespace-nowrap transition-colors">
+                Camera Settings
+            </button>
+            <button onclick="switchTab('analysis')" id="tab-analysis" class="tab-btn py-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-400 hover:text-white hover:border-gray-400 whitespace-nowrap transition-colors">
+                Analysis Settings
+            </button>
+            <button onclick="switchTab('network')" id="tab-network" class="tab-btn py-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-400 hover:text-white hover:border-gray-400 whitespace-nowrap transition-colors">
+                Network
+            </button>
+            <button onclick="switchTab('advanced')" id="tab-advanced" class="tab-btn py-3 px-1 border-b-2 border-transparent font-medium text-sm text-gray-400 hover:text-white hover:border-gray-400 whitespace-nowrap transition-colors">
+                Advanced
+            </button>
+        </nav>
     </div>
-    <div class="status-right">
-        <button class="btn btn-primary" onclick="saveChanges()" id="saveBtn" disabled>
-            Save Changes
+    
+    <!-- Tab Content -->
+    <div id="tab-content">
+        <!-- General Settings Tab -->
+        <div id="content-general" class="tab-content">
+            <h3 class="text-lg font-semibold text-white mb-6">General Settings</h3>
+            
+            <div class="space-y-6">
+                <!-- Units -->
+                <div class="glass rounded-xl p-6 border border-white/10">
+                    <h4 class="font-medium text-white mb-4">Measurement Units</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Distance</label>
+                            <select id="distance-units" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                                <option value="yards">Yards</option>
+                                <option value="meters">Meters</option>
+                                <option value="feet">Feet</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Speed</label>
+                            <select id="speed-units" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                                <option value="mph">Miles per Hour</option>
+                                <option value="kph">Kilometers per Hour</option>
+                                <option value="mps">Meters per Second</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Display Settings -->
+                <div class="glass rounded-xl p-6 border border-white/10">
+                    <h4 class="font-medium text-white mb-4">Display Preferences</h4>
+                    <div class="space-y-4">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="show-grid" checked class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <span class="ml-3 text-sm text-gray-300">Show grid on trajectory display</span>
+                        </label>
+                        
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="auto-record" checked class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <span class="ml-3 text-sm text-gray-300">Auto-record all shots</span>
+                        </label>
+                        
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="sound-alerts" class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <span class="ml-3 text-sm text-gray-300">Enable sound alerts</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Session Settings -->
+                <div class="glass rounded-xl p-6 border border-white/10">
+                    <h4 class="font-medium text-white mb-4">Session Settings</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Auto-save interval</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="range" id="save-interval" min="1" max="10" value="5" class="flex-1">
+                                <span id="save-interval-value" class="text-white font-medium w-12">5 min</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Session timeout</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="range" id="session-timeout" min="15" max="120" value="60" step="15" class="flex-1">
+                                <span id="session-timeout-value" class="text-white font-medium w-16">60 min</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Camera Settings Tab -->
+        <div id="content-camera" class="tab-content hidden">
+            <h3 class="text-lg font-semibold text-white mb-6">Camera Settings</h3>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Camera 1 Settings -->
+                <div class="glass rounded-xl p-6 border border-purple-500/20">
+                    <h4 class="font-medium text-white mb-4">Camera 1 - Tee Camera</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Resolution</label>
+                            <select class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                                <option value="1920x1080">1920x1080 (Full HD)</option>
+                                <option value="1280x720">1280x720 (HD)</option>
+                                <option value="640x480">640x480 (SD)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Frame Rate</label>
+                            <select class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                                <option value="60">60 FPS</option>
+                                <option value="120">120 FPS</option>
+                                <option value="240">240 FPS</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Exposure</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="range" id="cam1-exposure" min="-10" max="10" value="0" class="flex-1">
+                                <span id="cam1-exposure-value" class="text-white font-medium w-8">0</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Gain</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="range" id="cam1-gain" min="0" max="100" value="50" class="flex-1">
+                                <span id="cam1-gain-value" class="text-white font-medium w-8">50</span>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+                            Test Camera 1
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Camera 2 Settings -->
+                <div class="glass rounded-xl p-6 border border-blue-500/20">
+                    <h4 class="font-medium text-white mb-4">Camera 2 - Flight Camera</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Resolution</label>
+                            <select class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors">
+                                <option value="1920x1080">1920x1080 (Full HD)</option>
+                                <option value="1280x720">1280x720 (HD)</option>
+                                <option value="640x480">640x480 (SD)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Frame Rate</label>
+                            <select class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-colors">
+                                <option value="60">60 FPS</option>
+                                <option value="120">120 FPS</option>
+                                <option value="240">240 FPS</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Exposure</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="range" id="cam2-exposure" min="-10" max="10" value="0" class="flex-1">
+                                <span id="cam2-exposure-value" class="text-white font-medium w-8">0</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Gain</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="range" id="cam2-gain" min="0" max="100" value="50" class="flex-1">
+                                <span id="cam2-gain-value" class="text-white font-medium w-8">50</span>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                            Test Camera 2
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Analysis Settings Tab -->
+        <div id="content-analysis" class="tab-content hidden">
+            <h3 class="text-lg font-semibold text-white mb-6">Analysis Settings</h3>
+            
+            <div class="space-y-6">
+                <!-- Detection Settings -->
+                <div class="glass rounded-xl p-6 border border-white/10">
+                    <h4 class="font-medium text-white mb-4">Ball Detection</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Detection Sensitivity</label>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs text-gray-400">Low</span>
+                                <input type="range" id="detection-sensitivity" min="1" max="10" value="7" class="flex-1">
+                                <span class="text-xs text-gray-400">High</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Minimum Ball Size (pixels)</label>
+                            <input type="number" value="10" min="5" max="50" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Maximum Ball Size (pixels)</label>
+                            <input type="number" value="100" min="20" max="200" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Calculation Settings -->
+                <div class="glass rounded-xl p-6 border border-white/10">
+                    <h4 class="font-medium text-white mb-4">Calculation Parameters</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Smoothing Factor</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="range" id="smoothing" min="0" max="10" value="5" class="flex-1">
+                                <span id="smoothing-value" class="text-white font-medium w-8">5</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Prediction Model</label>
+                            <select class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                                <option value="physics">Physics-based</option>
+                                <option value="ml">Machine Learning</option>
+                                <option value="hybrid">Hybrid</option>
+                            </select>
+                        </div>
+                        
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <span class="ml-3 text-sm text-gray-300">Enable wind compensation</span>
+                        </label>
+                        
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <span class="ml-3 text-sm text-gray-300">Apply altitude correction</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Network Tab -->
+        <div id="content-network" class="tab-content hidden">
+            <h3 class="text-lg font-semibold text-white mb-6">Network Settings</h3>
+            
+            <div class="space-y-6">
+                <!-- WebSocket Settings -->
+                <div class="glass rounded-xl p-6 border border-white/10">
+                    <h4 class="font-medium text-white mb-4">WebSocket Configuration</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">WebSocket Port</label>
+                            <input type="number" value="8081" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Max Connections</label>
+                            <input type="number" value="10" min="1" max="100" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                        </div>
+                        
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <span class="ml-3 text-sm text-gray-300">Enable WebSocket server</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- API Settings -->
+                <div class="glass rounded-xl p-6 border border-white/10">
+                    <h4 class="font-medium text-white mb-4">API Configuration</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">API Key</label>
+                            <div class="flex space-x-2">
+                                <input type="password" id="api-key" value="••••••••••••••••" class="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                                <button onclick="generateApiKey()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors">
+                                    Generate
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <span class="ml-3 text-sm text-gray-300">Enable external API access</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Advanced Tab -->
+        <div id="content-advanced" class="tab-content hidden">
+            <h3 class="text-lg font-semibold text-white mb-6">Advanced Settings</h3>
+            
+            <div class="space-y-6">
+                <!-- System Settings -->
+                <div class="glass rounded-xl p-6 border border-white/10">
+                    <h4 class="font-medium text-white mb-4">System Configuration</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Log Level</label>
+                            <select class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                                <option value="error">Error</option>
+                                <option value="warning">Warning</option>
+                                <option value="info" selected>Info</option>
+                                <option value="debug">Debug</option>
+                                <option value="verbose">Verbose</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Max Log Size (MB)</label>
+                            <input type="number" value="100" min="10" max="1000" class="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500 transition-colors">
+                        </div>
+                        
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <span class="ml-3 text-sm text-gray-300">Enable debug mode</span>
+                        </label>
+                        
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer">
+                            <div class="relative w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <span class="ml-3 text-sm text-gray-300">Enable telemetry</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Danger Zone -->
+                <div class="glass rounded-xl p-6 border border-red-500/20 bg-red-500/5">
+                    <h4 class="font-medium text-red-400 mb-4">Danger Zone</h4>
+                    <div class="space-y-4">
+                        <button onclick="resetSettings()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors">
+                            Reset to Defaults
+                        </button>
+                        
+                        <button onclick="clearData()" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-lg transition-colors">
+                            Clear All Shot Data
+                        </button>
+                        
+                        <button onclick="factoryReset()" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
+                            Factory Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Save Button -->
+    <div class="mt-8 flex justify-end space-x-4">
+        <button onclick="discardChanges()" class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-xl shadow-lg transition-all duration-200">
+            Discard Changes
         </button>
-        <button class="btn btn-secondary" onclick="reloadConfig()">
-            Reload
-        </button>
-        <button class="btn btn-secondary" onclick="showDiff()">
-            Diff
-        </button>
-        <button class="btn btn-danger" onclick="resetAll()">
-            Reset
+        <button onclick="saveSettings()" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105">
+            Save Settings
         </button>
     </div>
 </div>
 
-<div class="config-container">
-    <div class="category-sidebar">
-        <h3>Categories</h3>
-        <ul id="categoryList" class="category-list">
-        </ul>
-    </div>
-
-    <div class="config-panel">
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Search settings..." class="search-input" oninput="searchConfig()">
-            <button onclick="clearSearch()" class="clear-search">Clear</button>
+<!-- Status Toast -->
+<div id="status-toast" class="fixed bottom-8 right-8 glass rounded-xl p-4 border border-green-500/20 bg-green-500/10 hidden">
+    <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
         </div>
-
-        <div id="configContent" class="config-content">
-        </div>
-    </div>
-</div>
-
-<div id="loading" class="loading">
-    <div class="spinner"></div>
-    <p>Loading configuration...</p>
-</div>
-
-<div id="confirmModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2 id="modalTitle">Confirm</h2>
-            <button class="modal-close" onclick="closeModal()">&times;</button>
-        </div>
-        <div class="modal-body" id="modalBody">
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-            <button class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
+        <div>
+            <p class="font-medium text-white">Settings Saved</p>
+            <p class="text-sm text-gray-300">Your changes have been applied</p>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_scripts %}
-<script src="/static/js/config.js"></script>
+<!-- Load the modern configuration JavaScript that bridges with the backend API -->
+<script src="/static/js/config-modern.js"></script>
 {% endblock %}

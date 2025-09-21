@@ -74,11 +74,11 @@ Currently, the API does not implement authentication. Future versions may add se
   ```json
   {
     "status": "healthy",              // Overall system status
-    "activemq_connected": true,       // ActiveMQ broker connection
-    "activemq_running": true,         // ActiveMQ service status
+    "zeromq_connected": true,         // ZeroMQ listener connection
+    "zeromq_running": true,           // ZeroMQ listener status
     "pitrac_running": true,           // Main PiTrac service status
     "websocket_clients": 3,           // Active WebSocket connections
-    "listener_stats": {               // ActiveMQ listener metrics
+    "listener_stats": {               // ZeroMQ listener metrics
       "connected": true,
       "messages_processed": 42,
       "errors": 0
@@ -102,10 +102,10 @@ Currently, the API does not implement authentication. Future versions may add se
   }
   ```
 
-## ActiveMQ Message Format
+## ZeroMQ Message Format
 
 ### Message Topics
-- Primary Topic: `/topic/Golf.Sim`
+- Primary Topic: `golf.sim.results`
 - Message Encoding: MsgPack
 - Supported Formats:
   1. Array Format: `[speed, launch_angle, side_angle, ...]`
@@ -125,9 +125,8 @@ Currently, the API does not implement authentication. Future versions may add se
 Configuration is loaded from `pitrac.yaml` with the following key network settings:
 ```yaml
 network:
-  broker_address: tcp://localhost:61616  # ActiveMQ broker
-  username: pitrac_user                  # Optional credentials
-  password: secure_password              # Optional credentials
+  zeromq_pub_endpoint: tcp://*:5555      # ZeroMQ publisher endpoint
+  zeromq_sub_endpoint: tcp://localhost:5556  # ZeroMQ subscriber endpoint
 ```
 
 ## Recommended Clients

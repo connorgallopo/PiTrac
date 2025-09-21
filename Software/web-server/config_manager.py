@@ -32,9 +32,13 @@ class ConfigurationManager:
 
         # Configuration paths for three-tier system
         self.user_settings_path = expand_path(
-            sys_paths.get("userSettingsPath", {}).get("default", "~/.pitrac/config/user_settings.json")
+            sys_paths.get("userSettingsPath", {}).get(
+                "default", "~/.pitrac/config/user_settings.json"
+            )
         )
-        self.calibration_data_path = expand_path("~/.pitrac/config/calibration_data.json")
+        self.calibration_data_path = expand_path(
+            "~/.pitrac/config/calibration_data.json"
+        )
 
         self.user_settings: Dict[str, Any] = {}
         self.calibration_data: Dict[str, Any] = {}
@@ -56,7 +60,11 @@ class ConfigurationManager:
 
     def _load_restart_required_params(self) -> set:
         """Load parameters that require restart from configurations.json metadata"""
-        metadata = self._raw_metadata if hasattr(self, "_raw_metadata") else self._load_raw_metadata()
+        metadata = (
+            self._raw_metadata
+            if hasattr(self, "_raw_metadata")
+            else self._load_raw_metadata()
+        )
         settings_metadata = metadata.get("settings", {})
 
         restart_params = set()
@@ -148,7 +156,11 @@ class ConfigurationManager:
             """Recursively merge override into base"""
             result = base.copy()
             for key, value in override.items():
-                if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                if (
+                    key in result
+                    and isinstance(result[key], dict)
+                    and isinstance(value, dict)
+                ):
                     result[key] = deep_merge(result[key], value)
                 else:
                     result[key] = value
@@ -246,7 +258,9 @@ class ConfigurationManager:
                 if is_calibration:
                     calibration_copy = copy.deepcopy(self.calibration_data)
                     if self._delete_from_dict(calibration_copy, key):
-                        if self._save_json(self.calibration_data_path, calibration_copy):
+                        if self._save_json(
+                            self.calibration_data_path, calibration_copy
+                        ):
                             self.calibration_data = calibration_copy
                             self._rebuild_merged_config()
                             return (
@@ -274,7 +288,11 @@ class ConfigurationManager:
                         self.calibration_data = calibration_copy
                         self._rebuild_merged_config()
                         requires_restart = key in self.restart_required_params
-                        return True, f"Set calibration {key} = {value}", requires_restart
+                        return (
+                            True,
+                            f"Set calibration {key} = {value}",
+                            requires_restart,
+                        )
                     return False, "Failed to save calibration data", False
             else:
                 settings_copy = copy.deepcopy(self.user_settings)
@@ -322,7 +340,9 @@ class ConfigurationManager:
 
         return False
 
-    def _cleanup_empty_dicts(self, d: Dict[str, Any], max_depth: int = 100, current_depth: int = 0) -> None:
+    def _cleanup_empty_dicts(
+        self, d: Dict[str, Any], max_depth: int = 100, current_depth: int = 0
+    ) -> None:
         """Remove empty nested dictionaries
 
         Args:
@@ -331,7 +351,9 @@ class ConfigurationManager:
             current_depth: Current recursion depth
         """
         if current_depth >= max_depth:
-            logger.warning(f"Maximum recursion depth {max_depth} reached in _cleanup_empty_dicts")
+            logger.warning(
+                f"Maximum recursion depth {max_depth} reached in _cleanup_empty_dicts"
+            )
             return
 
         keys_to_delete = []
@@ -405,7 +427,10 @@ class ConfigurationManager:
                         valid_options = list(available_models.values())
                         str_value = str(value)
                         if str_value not in valid_options:
-                            return False, f"Must be one of: {', '.join(available_models.keys())}"
+                            return (
+                                False,
+                                f"Must be one of: {', '.join(available_models.keys())}",
+                            )
                     return True, ""
                 else:
                     valid_options = list(setting_info["options"].keys())
@@ -414,7 +439,12 @@ class ConfigurationManager:
                         return False, f"Must be one of: {', '.join(valid_options)}"
 
             elif setting_type == "boolean":
-                if not isinstance(value, bool) and value not in [True, False, "true", "false"]:
+                if not isinstance(value, bool) and value not in [
+                    True,
+                    False,
+                    "true",
+                    "false",
+                ]:
                     return False, "Must be true or false"
 
             elif setting_type == "number":
@@ -471,7 +501,9 @@ class ConfigurationManager:
             json_settings_count = 0
             for key, setting_info in settings_metadata.items():
                 # Skip non-JSON routed settings
-                passed_via = setting_info.get("passedVia", "json")  # Default to json if not specified
+                passed_via = setting_info.get(
+                    "passedVia", "json"
+                )  # Default to json if not specified
                 if passed_via in ["cli", "environment"]:
                     continue
 
@@ -486,11 +518,17 @@ class ConfigurationManager:
                 raise RuntimeError("No JSON settings found to generate config")
 
             # Save to generated location
-            generated_path = self.user_settings_path.parent / "generated_golf_sim_config.json"
+            generated_path = (
+                self.user_settings_path.parent / "generated_golf_sim_config.json"
+            )
             if not self._save_json(generated_path, config):
-                raise RuntimeError(f"Failed to save generated config to {generated_path}")
+                raise RuntimeError(
+                    f"Failed to save generated config to {generated_path}"
+                )
 
-            logger.info(f"Generated golf_sim_config.json with {json_settings_count} settings at {generated_path}")
+            logger.info(
+                f"Generated golf_sim_config.json with {json_settings_count} settings at {generated_path}"
+            )
             return generated_path
 
         except Exception as e:
@@ -539,7 +577,11 @@ class ConfigurationManager:
         Returns a dict of {display_name: path} for dropdown options.
         """
         models = {}
-        metadata = self._raw_metadata if hasattr(self, "_raw_metadata") else self._load_raw_metadata()
+        metadata = (
+            self._raw_metadata
+            if hasattr(self, "_raw_metadata")
+            else self._load_raw_metadata()
+        )
         sys_paths = metadata.get("systemPaths", {})
 
         model_search_paths = sys_paths.get("modelSearchPaths", {}).get("default", [])
@@ -564,6 +606,7 @@ class ConfigurationManager:
                         if onnx_path.exists():
                             display_name = model_dir.name
                             if display_name not in models:
+                                # Always use absolute path
                                 path_str = str(onnx_path.resolve())
                                 models[display_name] = path_str
                             break
@@ -646,7 +689,9 @@ class ConfigurationManager:
                     )
         return env_params
 
-    def flatten_config(self, config: Dict[str, Any], prefix: str = "") -> Dict[str, Any]:
+    def flatten_config(
+        self, config: Dict[str, Any], prefix: str = ""
+    ) -> Dict[str, Any]:
         """Flatten nested config dict into dot-notation keys."""
         result = {}
         for key, value in config.items():
@@ -704,7 +749,9 @@ class ConfigurationManager:
         # No auto-categorization - all items must have explicit categories
 
         # Remove empty categories
-        categories = {k: v for k, v in categories.items() if v["basic"] or v["advanced"]}
+        categories = {
+            k: v for k, v in categories.items() if v["basic"] or v["advanced"]
+        }
 
         return categories
 
@@ -751,7 +798,10 @@ class ConfigurationManager:
             export_data = {
                 "user_settings": copy.deepcopy(self.user_settings),
                 "calibration_data": copy.deepcopy(self.calibration_data),
-                "metadata": {"exported_at": "", "version": "1.0"},  # Could add timestamp if needed
+                "metadata": {
+                    "exported_at": "",
+                    "version": "1.0",
+                },  # Could add timestamp if needed
             }
             return export_data
 
@@ -773,14 +823,18 @@ class ConfigurationManager:
                     new_user_settings = import_data["user_settings"]
                     if isinstance(new_user_settings, dict):
                         self.user_settings = copy.deepcopy(new_user_settings)
-                        if not self._save_json(self.user_settings_path, self.user_settings):
+                        if not self._save_json(
+                            self.user_settings_path, self.user_settings
+                        ):
                             return False, "Failed to save imported user settings"
 
                 if "calibration_data" in import_data:
                     new_calibration_data = import_data["calibration_data"]
                     if isinstance(new_calibration_data, dict):
                         self.calibration_data = copy.deepcopy(new_calibration_data)
-                        if not self._save_json(self.calibration_data_path, self.calibration_data):
+                        if not self._save_json(
+                            self.calibration_data_path, self.calibration_data
+                        ):
                             return False, "Failed to save imported calibration data"
 
                 self._rebuild_merged_config()
