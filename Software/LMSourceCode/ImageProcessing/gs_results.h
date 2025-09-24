@@ -33,6 +33,9 @@ namespace golf_sim {
         // to the right.
         float GetSpinAxis() const;
 
+        // Calculate carry distance based on launch parameters
+        void CalculateCarryDistance();
+
         // Deals with problem where Boost will put double-quotes around double values
         static std::string FormatDoubleAsString(const double value);
         
@@ -48,6 +51,7 @@ namespace golf_sim {
         float vla_deg_ = 0.;
         int back_spin_rpm_ = 0;
         int side_spin_rpm_ = 0;     // Negative is left (counter-clockwise from above ball)
+        float carry_meters_ = 0;    // Calculated carry distance
         GolfSimClubs::GsClubType club_type_ = GolfSimClubs::GsClubType::kNotSelected;
 
         // Some systems need a keep-alive

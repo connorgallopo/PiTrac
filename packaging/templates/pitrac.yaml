@@ -79,6 +79,30 @@ ball_detection:
   # ball_radius_pixels: 87    # Maps to gs_config.ball_position.kExpectedBallRadiusPixelsAt40cm
 
 # ----------------------------------------------------------------------------
+# CARRY DISTANCE CALCULATION
+# ----------------------------------------------------------------------------
+
+physics:
+  # Enable internal carry distance calculation
+  calculate_carry: true        # Enable carry calculation (default: true)
+
+  # Accuracy mode for carry calculation
+  # Options: fast (±3 yards), balanced (±1.5 yards), accurate (±0.8 yards)
+  carry_accuracy: balanced
+
+  # Use pre-computed lookup tables for speed
+  use_lookup_table: true       # Use lookup tables (default: true)
+
+  # Environmental conditions (optional - for more accurate calculations)
+  environment:
+    # temperature_celsius: 20  # Temperature in Celsius
+    # humidity_percent: 50     # Humidity percentage
+    # altitude_meters: 0       # Altitude above sea level
+    # air_pressure_hpa: 1013.25 # Air pressure in hectopascals
+    # wind_speed_mps: 0        # Wind speed in meters/second
+    # wind_direction_deg: 0    # Wind direction in degrees
+
+# ----------------------------------------------------------------------------
 # STROBING (LED TIMING)
 # ----------------------------------------------------------------------------
 

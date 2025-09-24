@@ -192,6 +192,10 @@ pitrac_lm_sources += ([
                         'gs_ipc_control_msg.cpp',
                         'gs_results.cpp',
                         'gs_gspro_results.cpp',
+                        'CarryCalculation/CarryCalculator.cpp',
+                        'CarryCalculation/LookupTable.cpp',
+                        'CarryCalculation/PhysicsFormulas.cpp',
+                        'CarryCalculation/NEONOptimizations.cpp',
                         'gs_ui_system.cpp',
                         'gs_ipc_mat.cpp',
                         'gs_ipc_result.cpp',
@@ -217,11 +221,27 @@ pitrac_lm_module_deps += ([
 			rpicam_app_dep,
 ])
 
-exec = executable('pitrac_lm', 
+exec = executable('pitrac_lm',
 	pitrac_lm_sources,
 	include_directories : pitrac_lm_include_dirs,
 	install : true,
         objects : closed_source_object_files,
+	dependencies : pitrac_lm_module_deps
+	)
+
+# Carry table generator utility
+table_gen_sources = ([
+	'CarryCalculation/generate_table.cpp',
+	'CarryCalculation/CarryCalculator.cpp',
+	'CarryCalculation/LookupTable.cpp',
+	'CarryCalculation/PhysicsFormulas.cpp',
+	'CarryCalculation/NEONOptimizations.cpp',
+])
+
+table_gen = executable('generate_carry_table',
+	table_gen_sources,
+	include_directories : pitrac_lm_include_dirs,
+	install : true,
 	dependencies : pitrac_lm_module_deps
 	)
 

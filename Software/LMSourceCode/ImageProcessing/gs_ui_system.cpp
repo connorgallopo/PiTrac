@@ -14,6 +14,7 @@
 #include "gs_ui_system.h"
 #include "gs_sim_interface.h"
 #include "gs_camera.h"
+#include "gs_results.h"
 
 namespace golf_sim {
 
@@ -117,13 +118,16 @@ namespace golf_sim {
     }
 
     void GsUISystem::SendIPCHitMessage(const GolfBall& result_ball, const std::string& secondary_message) {
+        // Create GsResults to calculate carry distance
+        GsResults shot_results(result_ball);
+
         GolfSimIPCMessage ipc_message(GolfSimIPCMessage::IPCMessageType::kResults);
 
         GsIPCResult& results = ipc_message.GetResultsForModification();
 
         results.result_type_ = GsIPCResultType::kHit;
         results.speed_mpers_ = result_ball.velocity_;
-        results.carry_meters_ = 100 + rand() % 150;
+        results.carry_meters_ = static_cast<int>(shot_results.carry_meters_);  // Use calculated carry
         results.launch_angle_deg_ = result_ball.angles_ball_perspective_[1];
         results.side_angle_deg_ = result_ball.angles_ball_perspective_[0];
         results.back_spin_rpm_ = result_ball.rotation_speeds_RPM_[2];
@@ -137,7 +141,7 @@ namespace golf_sim {
         results.image_file_paths_.push_back(kWebServerResultBallExposureCandidates + ".png");  // Shows ball trajectory
         results.image_file_paths_.push_back(kWebServerResultBallRotatedByBestAngles + ".png");  // Rotation analysis result
 
-        GS_LOG_MSG(info, "BALL_HIT_CSV, " + std::to_string(GsSimInterface::GetShotCounter()) + ", (carry - NA), (Total - NA), (Side Dest - NA), (Smash Factor - NA), (Club Speed - NA), "
+        GS_LOG_MSG(info, "BALL_HIT_CSV, " + std::to_string(GsSimInterface::GetShotCounter()) + ", " + std::to_string(results.carry_meters_ * 1.09361f) + " yds, (Total - NA), (Side Dest - NA), (Smash Factor - NA), (Club Speed - NA), "
             + std::to_string(CvUtils::MetersPerSecondToMPH(results.speed_mpers_)) + ", "
             + std::to_string(results.back_spin_rpm_) + ", "
             + std::to_string(results.side_spin_rpm_) + ", "

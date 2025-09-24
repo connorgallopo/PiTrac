@@ -12,6 +12,7 @@
 #include "cv_utils.h"
 
 #include "gs_results.h"
+#include "CarryCalculation/CarryCalculator.h"
 
 namespace golf_sim {
 
@@ -32,8 +33,8 @@ namespace golf_sim {
         // but this is a reasonable default for now
         club_type_ = GolfSimClubs::GetCurrentClubType();
 
-        // TBD - Even though this is a constructor, it might be a reasonable
-        // place to calculate the Carry yardarge.
+        // Calculate carry distance using CarryCalculator
+        CalculateCarryDistance();
     }
 
     float GsResults::GetSpinAxis() const {
@@ -54,8 +55,8 @@ namespace golf_sim {
         s += "Side Spin:        " + std::to_string(side_spin_rpm_) + "\n";
         s += "Spin Axis (deg.): " + std::to_string(GetSpinAxis()) + "\n";
         s += "Club Type: (1D 3P)" + std::to_string(club_type_) + "\n";
-
-        // TBD - Add internal carry value.
+        s += "Carry (yards):    " + std::to_string(carry_meters_ * 1.09361f) + "\n";
+        s += "Carry (meters):   " + std::to_string(carry_meters_) + "\n";
 
         return s;
     }
@@ -108,6 +109,26 @@ namespace golf_sim {
         boost::replace_all(result, subStringToRemove, subStringToReplace);
 
         return result;
+    }
+
+    void GsResults::CalculateCarryDistance() {
+        // Static carry calculator instance (created once, reused)
+        static PiTrac::CarryCalculator calculator(PiTrac::CarryCalculator::AccuracyMode::BALANCED);
+
+        // Convert speed from mph to m/s
+        float speed_mps = speed_mph_ * 0.44704f;
+
+        // Calculate carry distance using the optimized calculator
+        carry_meters_ = calculator.calculateCarry(
+            speed_mps,
+            vla_deg_,
+            static_cast<float>(back_spin_rpm_),
+            static_cast<float>(side_spin_rpm_)
+        );
+
+        // Log the calculation (debug level)
+        LoggingTools::DebugMsg("Carry calculated: " + std::to_string(carry_meters_) + " meters (" +
+                              std::to_string(carry_meters_ * 1.09361f) + " yards)");
     }
 
 }
