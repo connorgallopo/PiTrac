@@ -3959,12 +3959,10 @@ namespace golf_sim {
         }
 
         // The returned imageXFromCenter and imageYFromCenter are the original imageX & Y in a new coordinate system with the center of the ball at (0,0)
-        static void getBallZ(const double imageX, const double imageY, double& imageXFromCenter, double& imageYFromCenter, double& ball3dZ) {
+        static void getBallZ(const double imageX, const double imageY,
+                            const double ballCenterX, const double ballCenterY, const double r, const double rSquared,
+                            double& imageXFromCenter, double& imageYFromCenter, double& ball3dZ) {
             // Basic idea:  x2 + y2 + z2 = r2  (2's are squared).  Just solve for z where we can
-
-            double r = currentBall_->measured_radius_pixels_;
-            double ballCenterX = currentBall_->x();
-            double ballCenterY = currentBall_->y();
 
             // Translate x and y into a new coordinate system that has the origin
             // at the center of the ball.
@@ -3978,8 +3976,7 @@ namespace golf_sim {
             }
             // Project the x,y coordinate onto the hemisphere to get the Z-axis position
             // Note that some of the image may be outside the sphere.  Ignore those
-            double rSquared = pow(r, 2);
-            double xSquarePlusYSquare = pow(imageXFromCenter, 2) + pow(imageYFromCenter, 2);
+            double xSquarePlusYSquare = imageXFromCenter * imageXFromCenter + imageYFromCenter * imageYFromCenter;
             double diff = rSquared - xSquarePlusYSquare;
             if (diff < 0.0) {
                 ball3dZ = 0;  // Point is off the hemisphere/circle
@@ -3997,12 +3994,17 @@ namespace golf_sim {
             double imageX = position[0];
             double imageY = position[1];
 
+            const double ballCenterX = currentBall_->x();
+            const double ballCenterY = currentBall_->y();
+            const double ballRadius = currentBall_->measured_radius_pixels_;
+            const double ballRadiusSquared = ballRadius * ballRadius;
 
             // Figure out where the pre-rotated point is
             double imageXFromCenter;
             double imageYFromCenter;
             double ball3dZOfUnrotatedPoint = 0.0;
-            getBallZ(imageX, imageY, imageXFromCenter, imageYFromCenter, ball3dZOfUnrotatedPoint);
+            getBallZ(imageX, imageY, ballCenterX, ballCenterY, ballRadius, ballRadiusSquared,
+                    imageXFromCenter, imageYFromCenter, ball3dZOfUnrotatedPoint);
 
             bool prerotatedPointNotValid = (ball3dZOfUnrotatedPoint <= 0.0001);  // A 0 value from getBallZ means that the point was outside the ROI
 
@@ -4047,15 +4049,16 @@ namespace golf_sim {
             }
 
             // Shift back to coordinates with the origin in the top-left
-            imageX = imageXFromCenter + projectionOp::currentBall_->x();
-            imageY = imageYFromCenter + projectionOp::currentBall_->y();
+            imageX = imageXFromCenter + ballCenterX;
+            imageY = imageYFromCenter + ballCenterY;
 
             // Get the Z value of the destination, rotated-to point.
             double ball3dZOfRotatedPoint = 0;
             double dummy_rotatedImageXFromCenter;  // Just used as a dummy variable to get the new Z
             double dummy_rotatedImageYFromCenter;  // Just used as a dummy variable to get the new Z
 
-            getBallZ(imageX, imageY, dummy_rotatedImageXFromCenter, dummy_rotatedImageYFromCenter, ball3dZOfRotatedPoint);
+            getBallZ(imageX, imageY, ballCenterX, ballCenterY, ballRadius, ballRadiusSquared,
+                    dummy_rotatedImageXFromCenter, dummy_rotatedImageYFromCenter, ball3dZOfRotatedPoint);
 
             if (currentBall_->PointIsInsideBall(imageX, imageY) && ball3dZOfRotatedPoint < 0.001) {
                 GS_LOG_TRACE_MSG(trace, "Project2dImageTo3dBall Z-value pixel within ball at (" + std::to_string(imageX) +
@@ -4086,15 +4089,16 @@ namespace golf_sim {
 
                     // If the final, new pixel came from an invalid place, don't allow it to pollute the rotated image
                     // Not rounding here helped increase performance
-                    projectedImg_.at<cv::Vec2i>(roundedImageX, roundedImageY)[0] = (int)(ball3dZOfRotatedPoint);
+                    cv::Vec2i& pixel = projectedImg_.at<cv::Vec2i>(roundedImageX, roundedImageY);
+                    pixel[0] = (int)(ball3dZOfRotatedPoint);
 
-                    /** TBD - DEBUG ONLY 
+                    /** TBD - DEBUG ONLY
                     if (currentBall_->PointIsInsideBall(roundedImageX, roundedImageY) && pixelValue == kPixelIgnoreValue) {
                         GS_LOG_TRACE_MSG(trace, "Project2dImageTo3dBall found ignore pixel within ball at (" + std::to_string(roundedImageX) +
                                     ", " + std::to_string(roundedImageY) + ").");
                     }
                     */
-                    projectedImg_.at<cv::Vec2i>(roundedImageX, roundedImageY)[1] = (prerotatedPointNotValid ? kPixelIgnoreValue : pixelValue);
+                    pixel[1] = (prerotatedPointNotValid ? kPixelIgnoreValue : pixelValue);
             }
             else {
                 /** TBD - DEBUG ONLY
