@@ -16,6 +16,7 @@
 #include <vector>
 #include <chrono>
 #include <fstream>
+#include <iomanip>
 #include "gs_format_lib.h"
 
 #include <boost/timer/timer.hpp>
@@ -299,6 +300,19 @@ namespace golf_sim {
             kCoarseYRotationDegreesStart, kCoarseYRotationDegreesEnd, kCoarseYRotationDegreesIncrement,
             kCoarseZRotationDegreesStart, kCoarseZRotationDegreesEnd, kCoarseZRotationDegreesIncrement
         );
+
+        std::cout << "\n=== Trig Cache Initialized ===\n";
+        std::cout << "X: [" << kCoarseXRotationDegreesStart << "° to " << kCoarseXRotationDegreesEnd
+                  << "°] step " << kCoarseXRotationDegreesIncrement << "° = "
+                  << coarse_trig_cache_.x_sin_.size() << " values\n";
+        std::cout << "Y: [" << kCoarseYRotationDegreesStart << "° to " << kCoarseYRotationDegreesEnd
+                  << "°] step " << kCoarseYRotationDegreesIncrement << "° = "
+                  << coarse_trig_cache_.y_sin_.size() << " values\n";
+        std::cout << "Z: [" << kCoarseZRotationDegreesStart << "° to " << kCoarseZRotationDegreesEnd
+                  << "°] step " << kCoarseZRotationDegreesIncrement << "° = "
+                  << coarse_trig_cache_.z_sin_.size() << " values\n";
+        std::cout << "Total memory: ~" << ((coarse_trig_cache_.x_sin_.size() + coarse_trig_cache_.y_sin_.size() + coarse_trig_cache_.z_sin_.size()) * 2 * sizeof(double)) << " bytes\n";
+        std::cout << "==============================\n\n";
 
         // The following constants are only used internal to the GolfSimCamera class, and so can be initialized in the constructor
         GolfSimConfiguration::SetConstant("gs_config.spin_analysis.kCoarseXRotationDegreesIncrement", kCoarseXRotationDegreesIncrement);
@@ -3331,7 +3345,7 @@ namespace golf_sim {
                                                     std::vector<RotationCandidate>* candidates,
                                                     std::vector<std::string>& comparison_csv_data) {
 
-        boost::timer::cpu_timer timer1;
+        boost::timer::cpu_timer timer1, timer_compare, timer_search;
 
         // Assume candidates is a vector that is already pre-sized and filled with candidate information
         // and that the candidate_elements_mat has x, y, and z bounds that are commensurate with the candidates vector
@@ -3344,6 +3358,7 @@ namespace golf_sim {
 
 
         // Iterate through the matrix of candidates
+        timer_compare.start();
 
         ImgComparisonOp::setup(target_image, candidate_elements_mat, candidates, &comparisonData);
 
@@ -3363,7 +3378,11 @@ namespace golf_sim {
             (*candidate_elements_mat).forEach<ushort>(ImgComparisonOp());
         }
 
+        timer_compare.stop();
+        double compare_time = timer_compare.elapsed().wall / 1.0e9;
+
         // Find the best candidate from the comparison results
+        timer_search.start();
         double maxScaledScore = -1.0;
         double maxPixelsExamined = -1.0;
         double maxPixelsMatching = -1.0;
@@ -3443,13 +3462,21 @@ namespace golf_sim {
         // Transfer all the csv data to the output variable
         comparison_csv_data = comparisonData;
 
+        timer_search.stop();
+        double search_time = timer_search.elapsed().wall / 1.0e9;
+
         timer1.stop();
         boost::timer::cpu_times times = timer1.elapsed();
-        std::cout << "CompareCandidateAngleImages: ";
-        std::cout << std::fixed << std::setprecision(8)
-            << times.wall / 1.0e9 << "s wall, "
-            << times.user / 1.0e9 << "s user + "
-            << times.system / 1.0e9 << "s system.\n";
+
+        std::cout << "\n=== CompareCandidateAngleImages Performance ===\n";
+        std::cout << "Total Time:       " << std::fixed << std::setprecision(3)
+            << times.wall / 1.0e9 << "s wall\n";
+        std::cout << "  Image Compare:  " << std::setw(8) << compare_time << "s ("
+            << std::setw(5) << (compare_time / (times.wall / 1.0e9) * 100.0) << "%)\n";
+        std::cout << "  Best Search:    " << std::setw(8) << search_time << "s ("
+            << std::setw(5) << (search_time / (times.wall / 1.0e9) * 100.0) << "%)\n";
+        std::cout << "Candidates Compared: " << numCandidates << "\n";
+        std::cout << "===============================================\n\n";
 
         return maxScaledScoreIndex;
     }
@@ -3655,13 +3682,15 @@ namespace golf_sim {
         return dimpleEdges;
     }
  
-   bool BallImageProc::ComputeCandidateAngleImages(const cv::Mat& base_dimple_image, 
-                                                    const RotationSearchSpace& search_space, 
+   bool BallImageProc::ComputeCandidateAngleImages(const cv::Mat& base_dimple_image,
+                                                    const RotationSearchSpace& search_space,
                                                     cv::Mat &outputCandidateElementsMat,
-                                                    cv::Vec3i &output_candidate_elements_mat_size, 
-                                                    std::vector< RotationCandidate> &output_candidates, 
+                                                    cv::Vec3i &output_candidate_elements_mat_size,
+                                                    std::vector< RotationCandidate> &output_candidates,
                                                     const GolfBall& ball) {
         boost::timer::cpu_timer timer1;
+        boost::timer::cpu_timer timer_trig, timer_projection, timer_candidate_setup;
+        double trig_total = 0, projection_total = 0, candidate_setup_total = 0;
 
         // These are the ranges of angles that we will create candidate images for
         // We probably won't vary the X-axis rotation much if at all.
@@ -3733,12 +3762,47 @@ namespace golf_sim {
                          anglez_rotation_degrees_end == coarse_trig_cache_.z_end_ &&
                          anglez_rotation_degrees_increment == coarse_trig_cache_.z_increment_);
 
+        std::cout << "[Cache Status] " << (use_cache ? "USING CACHE" : "COMPUTING ON-THE-FLY") << "\n";
+
+        // Cache validation: verify a few random cached values match computed values
+        if (use_cache && xSize > 0 && ySize > 0 && zSize > 0) {
+            // Validate first X value
+            double cached_sinX, cached_cosX;
+            coarse_trig_cache_.GetXTrig(0, cached_sinX, cached_cosX);
+            double computed_sinX = sin(-CvUtils::DegreesToRadians(anglex_rotation_degrees_start));
+            double computed_cosX = cos(-CvUtils::DegreesToRadians(anglex_rotation_degrees_start));
+            double error_sinX = std::abs(cached_sinX - computed_sinX);
+            double error_cosX = std::abs(cached_cosX - computed_cosX);
+
+            std::cout << "[Cache Validation] First X angle (" << anglex_rotation_degrees_start << "°):\n";
+            std::cout << "  sin error: " << std::scientific << error_sinX;
+            std::cout << ", cos error: " << error_cosX << std::fixed;
+            std::cout << (error_sinX < 1e-15 && error_cosX < 1e-15 ? " ✓ PASS\n" : " ✗ FAIL\n");
+
+            // Validate middle Y value
+            int mid_y_idx = ySize / 2;
+            int mid_y_angle = angley_rotation_degrees_start + (mid_y_idx * angley_rotation_degrees_increment);
+            double cached_sinY, cached_cosY;
+            coarse_trig_cache_.GetYTrig(mid_y_idx, cached_sinY, cached_cosY);
+            double computed_sinY = sin(CvUtils::DegreesToRadians(mid_y_angle));
+            double computed_cosY = cos(CvUtils::DegreesToRadians(mid_y_angle));
+            double error_sinY = std::abs(cached_sinY - computed_sinY);
+            double error_cosY = std::abs(cached_cosY - computed_cosY);
+
+            std::cout << "[Cache Validation] Middle Y angle (" << mid_y_angle << "°):\n";
+            std::cout << "  sin error: " << std::scientific << error_sinY;
+            std::cout << ", cos error: " << error_cosY << std::fixed;
+            std::cout << (error_sinY < 1e-15 && error_cosY < 1e-15 ? " ✓ PASS\n" : " ✗ FAIL\n");
+        }
+
         for (int x_rotation_degrees = anglex_rotation_degrees_start, xIndex = 0; x_rotation_degrees <= anglex_rotation_degrees_end; x_rotation_degrees += anglex_rotation_degrees_increment, xIndex++) {
             for (int y_rotation_degrees = angley_rotation_degrees_start, yIndex = 0; y_rotation_degrees <= angley_rotation_degrees_end; y_rotation_degrees += angley_rotation_degrees_increment, yIndex++) {
                 for (int z_rotation_degrees = anglez_rotation_degrees_start, zIndex = 0; z_rotation_degrees <= anglez_rotation_degrees_end; z_rotation_degrees += anglez_rotation_degrees_increment, zIndex++) {
 
                     double sinX, cosX, sinY, cosY, sinZ, cosZ;
 
+                    // Time trig computation
+                    timer_trig.start();
                     if (use_cache) {
                         coarse_trig_cache_.GetXTrig(xIndex, sinX, cosX);
                         coarse_trig_cache_.GetYTrig(yIndex, sinY, cosY);
@@ -3752,9 +3816,17 @@ namespace golf_sim {
                         sinY = sin(radY); cosY = cos(radY);
                         sinZ = sin(radZ); cosZ = cos(radZ);
                     }
+                    timer_trig.stop();
+                    trig_total += timer_trig.elapsed().wall / 1.0e9;
 
+                    // Time 3D projection
+                    timer_projection.start();
                     cv::Mat ball13DImage = Project2dImageTo3dBall(base_dimple_image, ball, sinX, cosX, sinY, cosY, sinZ, cosZ);
+                    timer_projection.stop();
+                    projection_total += timer_projection.elapsed().wall / 1.0e9;
 
+                    // Time candidate setup
+                    timer_candidate_setup.start();
                     // Save the current image as a possible candidate to compare to later
                     RotationCandidate c;
 
@@ -3772,7 +3844,9 @@ namespace golf_sim {
                     outputCandidateElementsMat.at<ushort>(xIndex, yIndex, zIndex) = vectorIndex;
 
                     vectorIndex++;
-                    
+                    timer_candidate_setup.stop();
+                    candidate_setup_total += timer_candidate_setup.elapsed().wall / 1.0e9;
+
                     // Just for debug for small runs - probably too much information
                     /* std::string s = "ComputeCandidateAngleImages - Rotation Candidate: Idx: " + std::to_string(c.index) +
                         " Rot: (" + std::to_string(c.x_rotation_degrees) + ", " + std::to_string(c.y_rotation_degrees) + ", " + std::to_string(c.z_rotation_degrees) + ") ";
@@ -3791,10 +3865,21 @@ namespace golf_sim {
 
         timer1.stop();
         boost::timer::cpu_times times = timer1.elapsed();
-        std::cout << "ComputeCandidateAngleImages Time: " << std::fixed << std::setprecision(8)
+
+        std::cout << "\n=== ComputeCandidateAngleImages Performance Breakdown ===\n";
+        std::cout << "Total Time: " << std::fixed << std::setprecision(3)
             << times.wall / 1.0e9 << "s wall, "
             << times.user / 1.0e9 << "s user + "
-            << times.system / 1.0e9 << "s system.\n";
+            << times.system / 1.0e9 << "s system\n";
+        std::cout << "  Trig computation:    " << std::setw(8) << trig_total << "s ("
+            << std::setw(5) << (trig_total / (times.wall / 1.0e9) * 100.0) << "%)\n";
+        std::cout << "  3D Projection:       " << std::setw(8) << projection_total << "s ("
+            << std::setw(5) << (projection_total / (times.wall / 1.0e9) * 100.0) << "%)\n";
+        std::cout << "  Candidate Setup:     " << std::setw(8) << candidate_setup_total << "s ("
+            << std::setw(5) << (candidate_setup_total / (times.wall / 1.0e9) * 100.0) << "%)\n";
+        std::cout << "  Other/Overhead:      " << std::setw(8) << (times.wall / 1.0e9 - trig_total - projection_total - candidate_setup_total) << "s\n";
+        std::cout << "Candidates Generated: " << vectorIndex << " (Cache used: " << (use_cache ? "YES" : "NO") << ")\n";
+        std::cout << "==========================================================\n\n";
 
         return true;
     }
@@ -4049,6 +4134,11 @@ namespace golf_sim {
                                                    double sinX, double cosX,
                                                    double sinY, double cosY,
                                                    double sinZ, double cosZ) {
+        static boost::timer::cpu_timer projection_timer;
+        static double setup_time = 0, foreach_time = 0;
+        static int call_count = 0;
+
+        projection_timer.start();
 
         // Create a new 3D Mat to hold the results
         int sizes[2] = { image_gray.rows, image_gray.cols };
@@ -4060,9 +4150,13 @@ namespace golf_sim {
         projectedImg.rows = image_gray.rows;
         projectedImg.cols = image_gray.cols;
 
+        boost::timer::cpu_timer setup_timer;
+        setup_timer.start();
         // Setup the global structures we need before we do the parallelized callback to process
         // the 2D image
         projectionOp::setup(&ball, projectedImg, sinX, cosX, sinY, cosY, sinZ, cosZ);
+        setup_timer.stop();
+        setup_time += setup_timer.elapsed().wall / 1.0e9;
 
         if (kSerializeOpsForDebug) {
             /*  Serialized version for debugging - use the parallel stuff below for release */
@@ -4086,7 +4180,22 @@ namespace golf_sim {
         }
         else {
             // Parallel execution with function object.
+            boost::timer::cpu_timer foreach_timer;
+            foreach_timer.start();
             image_gray.forEach<uchar>(projectionOp());
+            foreach_timer.stop();
+            foreach_time += foreach_timer.elapsed().wall / 1.0e9;
+        }
+
+        projection_timer.stop();
+        call_count++;
+
+        // Print detailed stats every 100 calls (or once for fine pass)
+        if (call_count % 100 == 0 || call_count < 10) {
+            std::cout << "[Project2dImageTo3dBall Stats after " << call_count << " calls]\n";
+            std::cout << "  Average setup time:   " << std::setprecision(6) << (setup_time / call_count * 1000.0) << "ms\n";
+            std::cout << "  Average forEach time: " << std::setprecision(6) << (foreach_time / call_count * 1000.0) << "ms\n";
+            std::cout << "  Total avg per call:   " << std::setprecision(6) << ((setup_time + foreach_time) / call_count * 1000.0) << "ms\n";
         }
 
         return projectedImg;
