@@ -3723,17 +3723,35 @@ namespace golf_sim {
         int yIndex = 0;
         int zIndex = 0;
 
-        const TrigLookupCache& trig_cache = coarse_trig_cache_;
+        bool use_cache = (anglex_rotation_degrees_start == coarse_trig_cache_.x_start_ &&
+                         anglex_rotation_degrees_end == coarse_trig_cache_.x_end_ &&
+                         anglex_rotation_degrees_increment == coarse_trig_cache_.x_increment_ &&
+                         angley_rotation_degrees_start == coarse_trig_cache_.y_start_ &&
+                         angley_rotation_degrees_end == coarse_trig_cache_.y_end_ &&
+                         angley_rotation_degrees_increment == coarse_trig_cache_.y_increment_ &&
+                         anglez_rotation_degrees_start == coarse_trig_cache_.z_start_ &&
+                         anglez_rotation_degrees_end == coarse_trig_cache_.z_end_ &&
+                         anglez_rotation_degrees_increment == coarse_trig_cache_.z_increment_);
 
         for (int x_rotation_degrees = anglex_rotation_degrees_start, xIndex = 0; x_rotation_degrees <= anglex_rotation_degrees_end; x_rotation_degrees += anglex_rotation_degrees_increment, xIndex++) {
             for (int y_rotation_degrees = angley_rotation_degrees_start, yIndex = 0; y_rotation_degrees <= angley_rotation_degrees_end; y_rotation_degrees += angley_rotation_degrees_increment, yIndex++) {
                 for (int z_rotation_degrees = anglez_rotation_degrees_start, zIndex = 0; z_rotation_degrees <= anglez_rotation_degrees_end; z_rotation_degrees += anglez_rotation_degrees_increment, zIndex++) {
 
-                    // Phase 2 Optimization: Lookup pre-computed sin/cos from cache instead of computing
                     double sinX, cosX, sinY, cosY, sinZ, cosZ;
-                    trig_cache.GetXTrig(xIndex, sinX, cosX);
-                    trig_cache.GetYTrig(yIndex, sinY, cosY);
-                    trig_cache.GetZTrig(zIndex, sinZ, cosZ);
+
+                    if (use_cache) {
+                        coarse_trig_cache_.GetXTrig(xIndex, sinX, cosX);
+                        coarse_trig_cache_.GetYTrig(yIndex, sinY, cosY);
+                        coarse_trig_cache_.GetZTrig(zIndex, sinZ, cosZ);
+                    } else {
+                        // Fine pass or non-matching search space: compute on-the-fly
+                        double radX = -CvUtils::DegreesToRadians(x_rotation_degrees);  // X is negated
+                        double radY = CvUtils::DegreesToRadians(y_rotation_degrees);
+                        double radZ = CvUtils::DegreesToRadians(z_rotation_degrees);
+                        sinX = sin(radX); cosX = cos(radX);
+                        sinY = sin(radY); cosY = cos(radY);
+                        sinZ = sin(radZ); cosZ = cos(radZ);
+                    }
 
                     cv::Mat ball13DImage = Project2dImageTo3dBall(base_dimple_image, ball, sinX, cosX, sinY, cosY, sinZ, cosZ);
 
