@@ -17,6 +17,7 @@
 #include <chrono>
 #include <fstream>
 #include <iomanip>
+#include <sstream>
 #include "gs_format_lib.h"
 
 #include <boost/timer/timer.hpp>
@@ -301,18 +302,16 @@ namespace golf_sim {
             kCoarseZRotationDegreesStart, kCoarseZRotationDegreesEnd, kCoarseZRotationDegreesIncrement
         );
 
-        std::cout << "\n=== Trig Cache Initialized ===\n";
-        std::cout << "X: [" << kCoarseXRotationDegreesStart << "° to " << kCoarseXRotationDegreesEnd
-                  << "°] step " << kCoarseXRotationDegreesIncrement << "° = "
-                  << coarse_trig_cache_.x_sin_.size() << " values\n";
-        std::cout << "Y: [" << kCoarseYRotationDegreesStart << "° to " << kCoarseYRotationDegreesEnd
-                  << "°] step " << kCoarseYRotationDegreesIncrement << "° = "
-                  << coarse_trig_cache_.y_sin_.size() << " values\n";
-        std::cout << "Z: [" << kCoarseZRotationDegreesStart << "° to " << kCoarseZRotationDegreesEnd
-                  << "°] step " << kCoarseZRotationDegreesIncrement << "° = "
-                  << coarse_trig_cache_.z_sin_.size() << " values\n";
-        std::cout << "Total memory: ~" << ((coarse_trig_cache_.x_sin_.size() + coarse_trig_cache_.y_sin_.size() + coarse_trig_cache_.z_sin_.size()) * 2 * sizeof(double)) << " bytes\n";
-        std::cout << "==============================\n\n";
+        size_t total_memory = (coarse_trig_cache_.x_sin_.size() + coarse_trig_cache_.y_sin_.size() + coarse_trig_cache_.z_sin_.size()) * 2 * sizeof(double);
+        GS_LOG_MSG(info, "=== Trig Cache Initialized ===");
+        GS_LOG_MSG(info, "X: [" + std::to_string(kCoarseXRotationDegreesStart) + "° to " + std::to_string(kCoarseXRotationDegreesEnd) +
+                   "°] step " + std::to_string(kCoarseXRotationDegreesIncrement) + "° = " + std::to_string(coarse_trig_cache_.x_sin_.size()) + " values");
+        GS_LOG_MSG(info, "Y: [" + std::to_string(kCoarseYRotationDegreesStart) + "° to " + std::to_string(kCoarseYRotationDegreesEnd) +
+                   "°] step " + std::to_string(kCoarseYRotationDegreesIncrement) + "° = " + std::to_string(coarse_trig_cache_.y_sin_.size()) + " values");
+        GS_LOG_MSG(info, "Z: [" + std::to_string(kCoarseZRotationDegreesStart) + "° to " + std::to_string(kCoarseZRotationDegreesEnd) +
+                   "°] step " + std::to_string(kCoarseZRotationDegreesIncrement) + "° = " + std::to_string(coarse_trig_cache_.z_sin_.size()) + " values");
+        GS_LOG_MSG(info, "Total memory: ~" + std::to_string(total_memory) + " bytes");
+        GS_LOG_MSG(info, "==============================");
 
         // The following constants are only used internal to the GolfSimCamera class, and so can be initialized in the constructor
         GolfSimConfiguration::SetConstant("gs_config.spin_analysis.kCoarseXRotationDegreesIncrement", kCoarseXRotationDegreesIncrement);
@@ -3467,16 +3466,25 @@ namespace golf_sim {
 
         timer1.stop();
         boost::timer::cpu_times times = timer1.elapsed();
+        double wall_time = times.wall / 1.0e9;
 
-        std::cout << "\n=== CompareCandidateAngleImages Performance ===\n";
-        std::cout << "Total Time:       " << std::fixed << std::setprecision(3)
-            << times.wall / 1.0e9 << "s wall\n";
-        std::cout << "  Image Compare:  " << std::setw(8) << compare_time << "s ("
-            << std::setw(5) << (compare_time / (times.wall / 1.0e9) * 100.0) << "%)\n";
-        std::cout << "  Best Search:    " << std::setw(8) << search_time << "s ("
-            << std::setw(5) << (search_time / (times.wall / 1.0e9) * 100.0) << "%)\n";
-        std::cout << "Candidates Compared: " << numCandidates << "\n";
-        std::cout << "===============================================\n\n";
+        GS_LOG_MSG(info, "=== CompareCandidateAngleImages Performance ===");
+
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(3);
+        oss << "Total Time:       " << wall_time << "s wall";
+        GS_LOG_MSG(info, oss.str());
+
+        oss.str(""); oss.clear();
+        oss << "  Image Compare:  " << compare_time << "s (" << (compare_time / wall_time * 100.0) << "%)";
+        GS_LOG_MSG(info, oss.str());
+
+        oss.str(""); oss.clear();
+        oss << "  Best Search:    " << search_time << "s (" << (search_time / wall_time * 100.0) << "%)";
+        GS_LOG_MSG(info, oss.str());
+
+        GS_LOG_MSG(info, "Candidates Compared: " + std::to_string(numCandidates));
+        GS_LOG_MSG(info, "===============================================");
 
         return maxScaledScoreIndex;
     }
@@ -3762,7 +3770,7 @@ namespace golf_sim {
                          anglez_rotation_degrees_end == coarse_trig_cache_.z_end_ &&
                          anglez_rotation_degrees_increment == coarse_trig_cache_.z_increment_);
 
-        std::cout << "[Cache Status] " << (use_cache ? "USING CACHE" : "COMPUTING ON-THE-FLY") << "\n";
+        GS_LOG_MSG(info, "[Cache Status] " + std::string(use_cache ? "USING CACHE" : "COMPUTING ON-THE-FLY"));
 
         // Cache validation: verify a few random cached values match computed values
         if (use_cache && xSize > 0 && ySize > 0 && zSize > 0) {
@@ -3774,10 +3782,11 @@ namespace golf_sim {
             double error_sinX = std::abs(cached_sinX - computed_sinX);
             double error_cosX = std::abs(cached_cosX - computed_cosX);
 
-            std::cout << "[Cache Validation] First X angle (" << anglex_rotation_degrees_start << "°):\n";
-            std::cout << "  sin error: " << std::scientific << error_sinX;
-            std::cout << ", cos error: " << error_cosX << std::fixed;
-            std::cout << (error_sinX < 1e-15 && error_cosX < 1e-15 ? " ✓ PASS\n" : " ✗ FAIL\n");
+            std::ostringstream oss1;
+            oss1 << "[Cache Validation] First X angle (" << anglex_rotation_degrees_start << "°): sin_error="
+                 << std::scientific << error_sinX << ", cos_error=" << error_cosX
+                 << (error_sinX < 1e-15 && error_cosX < 1e-15 ? " ✓ PASS" : " ✗ FAIL");
+            GS_LOG_MSG(info, oss1.str());
 
             // Validate middle Y value
             int mid_y_idx = ySize / 2;
@@ -3789,10 +3798,11 @@ namespace golf_sim {
             double error_sinY = std::abs(cached_sinY - computed_sinY);
             double error_cosY = std::abs(cached_cosY - computed_cosY);
 
-            std::cout << "[Cache Validation] Middle Y angle (" << mid_y_angle << "°):\n";
-            std::cout << "  sin error: " << std::scientific << error_sinY;
-            std::cout << ", cos error: " << error_cosY << std::fixed;
-            std::cout << (error_sinY < 1e-15 && error_cosY < 1e-15 ? " ✓ PASS\n" : " ✗ FAIL\n");
+            std::ostringstream oss2;
+            oss2 << "[Cache Validation] Middle Y angle (" << mid_y_angle << "°): sin_error="
+                 << std::scientific << error_sinY << ", cos_error=" << error_cosY
+                 << (error_sinY < 1e-15 && error_cosY < 1e-15 ? " ✓ PASS" : " ✗ FAIL");
+            GS_LOG_MSG(info, oss2.str());
         }
 
         for (int x_rotation_degrees = anglex_rotation_degrees_start, xIndex = 0; x_rotation_degrees <= anglex_rotation_degrees_end; x_rotation_degrees += anglex_rotation_degrees_increment, xIndex++) {
@@ -3865,21 +3875,33 @@ namespace golf_sim {
 
         timer1.stop();
         boost::timer::cpu_times times = timer1.elapsed();
+        double wall_time = times.wall / 1.0e9;
 
-        std::cout << "\n=== ComputeCandidateAngleImages Performance Breakdown ===\n";
-        std::cout << "Total Time: " << std::fixed << std::setprecision(3)
-            << times.wall / 1.0e9 << "s wall, "
-            << times.user / 1.0e9 << "s user + "
-            << times.system / 1.0e9 << "s system\n";
-        std::cout << "  Trig computation:    " << std::setw(8) << trig_total << "s ("
-            << std::setw(5) << (trig_total / (times.wall / 1.0e9) * 100.0) << "%)\n";
-        std::cout << "  3D Projection:       " << std::setw(8) << projection_total << "s ("
-            << std::setw(5) << (projection_total / (times.wall / 1.0e9) * 100.0) << "%)\n";
-        std::cout << "  Candidate Setup:     " << std::setw(8) << candidate_setup_total << "s ("
-            << std::setw(5) << (candidate_setup_total / (times.wall / 1.0e9) * 100.0) << "%)\n";
-        std::cout << "  Other/Overhead:      " << std::setw(8) << (times.wall / 1.0e9 - trig_total - projection_total - candidate_setup_total) << "s\n";
-        std::cout << "Candidates Generated: " << vectorIndex << " (Cache used: " << (use_cache ? "YES" : "NO") << ")\n";
-        std::cout << "==========================================================\n\n";
+        GS_LOG_MSG(info, "=== ComputeCandidateAngleImages Performance Breakdown ===");
+
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(3);
+        oss << "Total Time: " << wall_time << "s wall, " << times.user / 1.0e9 << "s user + " << times.system / 1.0e9 << "s system";
+        GS_LOG_MSG(info, oss.str());
+
+        oss.str(""); oss.clear();
+        oss << "  Trig computation:    " << trig_total << "s (" << (trig_total / wall_time * 100.0) << "%)";
+        GS_LOG_MSG(info, oss.str());
+
+        oss.str(""); oss.clear();
+        oss << "  3D Projection:       " << projection_total << "s (" << (projection_total / wall_time * 100.0) << "%)";
+        GS_LOG_MSG(info, oss.str());
+
+        oss.str(""); oss.clear();
+        oss << "  Candidate Setup:     " << candidate_setup_total << "s (" << (candidate_setup_total / wall_time * 100.0) << "%)";
+        GS_LOG_MSG(info, oss.str());
+
+        oss.str(""); oss.clear();
+        oss << "  Other/Overhead:      " << (wall_time - trig_total - projection_total - candidate_setup_total) << "s";
+        GS_LOG_MSG(info, oss.str());
+
+        GS_LOG_MSG(info, "Candidates Generated: " + std::to_string(vectorIndex) + " (Cache used: " + (use_cache ? "YES" : "NO") + ")");
+        GS_LOG_MSG(info, "==========================================================");
 
         return true;
     }
@@ -4192,10 +4214,22 @@ namespace golf_sim {
 
         // Print detailed stats every 100 calls (or once for fine pass)
         if (call_count % 100 == 0 || call_count < 10) {
-            std::cout << "[Project2dImageTo3dBall Stats after " << call_count << " calls]\n";
-            std::cout << "  Average setup time:   " << std::setprecision(6) << (setup_time / call_count * 1000.0) << "ms\n";
-            std::cout << "  Average forEach time: " << std::setprecision(6) << (foreach_time / call_count * 1000.0) << "ms\n";
-            std::cout << "  Total avg per call:   " << std::setprecision(6) << ((setup_time + foreach_time) / call_count * 1000.0) << "ms\n";
+            std::ostringstream oss;
+            oss << std::fixed << std::setprecision(6);
+            oss << "[Project2dImageTo3dBall Stats after " << call_count << " calls]";
+            GS_LOG_MSG(info, oss.str());
+
+            oss.str(""); oss.clear();
+            oss << "  Average setup time:   " << (setup_time / call_count * 1000.0) << "ms";
+            GS_LOG_MSG(info, oss.str());
+
+            oss.str(""); oss.clear();
+            oss << "  Average forEach time: " << (foreach_time / call_count * 1000.0) << "ms";
+            GS_LOG_MSG(info, oss.str());
+
+            oss.str(""); oss.clear();
+            oss << "  Total avg per call:   " << ((setup_time + foreach_time) / call_count * 1000.0) << "ms";
+            GS_LOG_MSG(info, oss.str());
         }
 
         return projectedImg;
