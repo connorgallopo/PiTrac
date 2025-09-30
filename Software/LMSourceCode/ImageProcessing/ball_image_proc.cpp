@@ -247,6 +247,10 @@ namespace golf_sim {
         min_ball_radius_ = -1;
         max_ball_radius_ = -1;
 
+        int num_cores = std::thread::hardware_concurrency();
+        cv::setNumThreads(num_cores > 0 ? num_cores : 4);  // Default to 4 if detection fails
+        GS_LOG_MSG(info, "OpenCV configured to use " + std::to_string(cv::getNumThreads()) + " threads for parallel operations");
+
         // The following constants are only used internal to the GolfSimCamera class, and so can be initialized in the constructor
         GolfSimConfiguration::SetConstant("gs_config.spin_analysis.kCoarseXRotationDegreesIncrement", kCoarseXRotationDegreesIncrement);
         GolfSimConfiguration::SetConstant("gs_config.spin_analysis.kCoarseXRotationDegreesStart", kCoarseXRotationDegreesStart);
@@ -2878,13 +2882,13 @@ namespace golf_sim {
             ball2RadiusMultiplier = (double)ball_image1.rows / (double)ball_image2.rows;
             int upWidth = ball_image1.cols;
             int upHeight = ball_image1.rows;
-            cv::resize(ball_image2, ball_image2, cv::Size(upWidth, upHeight), cv::INTER_LINEAR);
+            cv::resize(ball_image2, ball_image2, cv::Size(upWidth, upHeight), cv::INTER_NEAREST);
         }
         else if (ball_image2.rows > ball_image1.rows || ball_image2.cols > ball_image1.cols) {
             ball1RadiusMultiplier = (double)ball_image2.rows / (double)ball_image1.rows;
             int upWidth = ball_image2.cols;
             int upHeight = ball_image2.rows;
-            cv::resize(ball_image1, ball_image1, cv::Size(upWidth, upHeight), cv::INTER_LINEAR);
+            cv::resize(ball_image1, ball_image1, cv::Size(upWidth, upHeight), cv::INTER_NEAREST);
         }
 
         // Save the original, non-equalized images for later QA

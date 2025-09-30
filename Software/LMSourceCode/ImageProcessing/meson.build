@@ -11,6 +11,9 @@ project('pitrac_lm', 'c', 'cpp',
         'werror=true',
         'warning_level=2',
         'cpp_std=c++20',
+        'buildtype=release',
+        'optimization=3',
+        'b_lto=true',
     ],
     license : 'LGPL 2.1+')
 
@@ -56,7 +59,9 @@ if cpu == 'aarch64' or neon == 'arm64'
         '-funroll-loops',           # Better for XNNPACK's compute kernels
         '-fprefetch-loop-arrays',   # Improve cache utilization
         '-falign-jumps=16',         # Better branch prediction
-        '-moutline-atomics'         # Better for Pi4/5 atomic operations
+        '-moutline-atomics',        # Better for Pi4/5 atomic operations
+        '-fvect-cost-model=unlimited',  # Aggressive auto-vectorization
+        '-march=armv8-a+crc',       # Explicit architecture for NEON availability
     ]
 elif neon == 'armv8-neon'
     cpp_arguments += ['-mfpu=neon-fp-armv8', '-ftree-vectorize']
