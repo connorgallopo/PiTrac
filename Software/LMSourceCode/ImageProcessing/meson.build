@@ -60,8 +60,6 @@ if cpu == 'aarch64' or neon == 'arm64'
         '-fprefetch-loop-arrays',   # Improve cache utilization
         '-falign-jumps=16',         # Better branch prediction
         '-moutline-atomics',        # Better for Pi4/5 atomic operations
-        '-fvect-cost-model=unlimited',  # Aggressive auto-vectorization
-        '-march=armv8-a+crc',       # Explicit architecture for NEON availability
     ]
 elif neon == 'armv8-neon'
     cpp_arguments += ['-mfpu=neon-fp-armv8', '-ftree-vectorize']

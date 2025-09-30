@@ -242,6 +242,49 @@ namespace golf_sim {
     std::vector<float> BallImageProc::yolo_detection_confidences_;
     std::vector<cv::Mat> BallImageProc::yolo_outputs_;
 
+    TrigLookupCache BallImageProc::coarse_trig_cache_;
+
+    void TrigLookupCache::Initialize(int x_start, int x_end, int x_inc,
+                                     int y_start, int y_end, int y_inc,
+                                     int z_start, int z_end, int z_inc) {
+        x_start_ = x_start; x_end_ = x_end; x_increment_ = x_inc;
+        y_start_ = y_start; y_end_ = y_end; y_increment_ = y_inc;
+        z_start_ = z_start; z_end_ = z_end; z_increment_ = z_inc;
+
+        int x_size = (x_end - x_start) / x_inc + 1;
+        int y_size = (y_end - y_start) / y_inc + 1;
+        int z_size = (z_end - z_start) / z_inc + 1;
+
+        x_sin_.resize(x_size); x_cos_.resize(x_size);
+        y_sin_.resize(y_size); y_cos_.resize(y_size);
+        z_sin_.resize(z_size); z_cos_.resize(z_size);
+
+        // Pre-compute X dimension (NOTE: X rotation is negated in original code)
+        for (int angle = x_start, i = 0; angle <= x_end; angle += x_inc, i++) {
+            double rad = -CvUtils::DegreesToRadians(angle);  // Match original: negative for X
+            x_sin_[i] = sin(rad);
+            x_cos_[i] = cos(rad);
+        }
+
+        // Pre-compute Y dimension
+        for (int angle = y_start, i = 0; angle <= y_end; angle += y_inc, i++) {
+            double rad = CvUtils::DegreesToRadians(angle);
+            y_sin_[i] = sin(rad);
+            y_cos_[i] = cos(rad);
+        }
+
+        // Pre-compute Z dimension
+        for (int angle = z_start, i = 0; angle <= z_end; angle += z_inc, i++) {
+            double rad = CvUtils::DegreesToRadians(angle);
+            z_sin_[i] = sin(rad);
+            z_cos_[i] = cos(rad);
+        }
+
+        GS_LOG_MSG(info, "Trig lookup cache initialized: " +
+                   std::to_string(x_size + y_size + z_size) + " angles pre-computed (" +
+                   std::to_string((x_size + y_size + z_size) * 2 * 8) + " bytes)");
+    }
+
 
     BallImageProc::BallImageProc() {
         min_ball_radius_ = -1;
@@ -250,6 +293,12 @@ namespace golf_sim {
         int num_cores = std::thread::hardware_concurrency();
         cv::setNumThreads(num_cores > 0 ? num_cores : 4);  // Default to 4 if detection fails
         GS_LOG_MSG(info, "OpenCV configured to use " + std::to_string(cv::getNumThreads()) + " threads for parallel operations");
+
+        coarse_trig_cache_.Initialize(
+            kCoarseXRotationDegreesStart, kCoarseXRotationDegreesEnd, kCoarseXRotationDegreesIncrement,
+            kCoarseYRotationDegreesStart, kCoarseYRotationDegreesEnd, kCoarseYRotationDegreesIncrement,
+            kCoarseZRotationDegreesStart, kCoarseZRotationDegreesEnd, kCoarseZRotationDegreesIncrement
+        );
 
         // The following constants are only used internal to the GolfSimCamera class, and so can be initialized in the constructor
         GolfSimConfiguration::SetConstant("gs_config.spin_analysis.kCoarseXRotationDegreesIncrement", kCoarseXRotationDegreesIncrement);
@@ -2882,13 +2931,13 @@ namespace golf_sim {
             ball2RadiusMultiplier = (double)ball_image1.rows / (double)ball_image2.rows;
             int upWidth = ball_image1.cols;
             int upHeight = ball_image1.rows;
-            cv::resize(ball_image2, ball_image2, cv::Size(upWidth, upHeight), cv::INTER_NEAREST);
+            cv::resize(ball_image2, ball_image2, cv::Size(upWidth, upHeight), cv::INTER_LINEAR);
         }
         else if (ball_image2.rows > ball_image1.rows || ball_image2.cols > ball_image1.cols) {
             ball1RadiusMultiplier = (double)ball_image2.rows / (double)ball_image1.rows;
             int upWidth = ball_image2.cols;
             int upHeight = ball_image2.rows;
-            cv::resize(ball_image1, ball_image1, cv::Size(upWidth, upHeight), cv::INTER_NEAREST);
+            cv::resize(ball_image1, ball_image1, cv::Size(upWidth, upHeight), cv::INTER_LINEAR);
         }
 
         // Save the original, non-equalized images for later QA
@@ -3674,17 +3723,19 @@ namespace golf_sim {
         int yIndex = 0;
         int zIndex = 0;
 
+        const TrigLookupCache& trig_cache = coarse_trig_cache_;
+
         for (int x_rotation_degrees = anglex_rotation_degrees_start, xIndex = 0; x_rotation_degrees <= anglex_rotation_degrees_end; x_rotation_degrees += anglex_rotation_degrees_increment, xIndex++) {
             for (int y_rotation_degrees = angley_rotation_degrees_start, yIndex = 0; y_rotation_degrees <= angley_rotation_degrees_end; y_rotation_degrees += angley_rotation_degrees_increment, yIndex++) {
                 for (int z_rotation_degrees = anglez_rotation_degrees_start, zIndex = 0; z_rotation_degrees <= anglez_rotation_degrees_end; z_rotation_degrees += anglez_rotation_degrees_increment, zIndex++) {
 
-                    cv::Mat ball2DImage;
-                    // TBD - Instead of this, call the projectTo3D function and then use the resulting
-                    // matrix directly in the comparison
-                    // GetRotatedImage(base_dimple_image, ball, cv::Vec3i(x_rotation_degrees, y_rotation_degrees, z_rotation_degrees), ball2DImage);
+                    // Phase 2 Optimization: Lookup pre-computed sin/cos from cache instead of computing
+                    double sinX, cosX, sinY, cosY, sinZ, cosZ;
+                    trig_cache.GetXTrig(xIndex, sinX, cosX);
+                    trig_cache.GetYTrig(yIndex, sinY, cosY);
+                    trig_cache.GetZTrig(zIndex, sinZ, cosZ);
 
-                    // Project the ball out onto a 3D hemisphere at the current x, y, and z-axis rotation
-                    cv::Mat ball13DImage = Project2dImageTo3dBall(base_dimple_image, ball, cv::Vec3i(x_rotation_degrees, y_rotation_degrees, z_rotation_degrees));
+                    cv::Mat ball13DImage = Project2dImageTo3dBall(base_dimple_image, ball, sinX, cosX, sinY, cosY, sinZ, cosZ);
 
                     // Save the current image as a possible candidate to compare to later
                     RotationCandidate c;
@@ -3732,11 +3783,18 @@ namespace golf_sim {
 
 
     void BallImageProc::GetRotatedImage(const cv::Mat& gray_2D_input_image, const GolfBall& ball, const cv::Vec3i rotation, cv::Mat& outputGrayImg) {
-       BOOST_LOG_FUNCTION();                    
-       
+       BOOST_LOG_FUNCTION();
+
+       double sinX = sin(-CvUtils::DegreesToRadians((double)rotation[0]));  // X is negated
+       double cosX = cos(-CvUtils::DegreesToRadians((double)rotation[0]));
+       double sinY = sin(CvUtils::DegreesToRadians((double)rotation[1]));
+       double cosY = cos(CvUtils::DegreesToRadians((double)rotation[1]));
+       double sinZ = sin(CvUtils::DegreesToRadians((double)rotation[2]));
+       double cosZ = cos(CvUtils::DegreesToRadians((double)rotation[2]));
+
        // Project the ball out onto a 3D hemisphere at the current x, y, and z-axis rotation
        // and then unproject back to 2D matrix (image)
-       cv::Mat ball3DImage = Project2dImageTo3dBall(gray_2D_input_image, ball, rotation);
+       cv::Mat ball3DImage = Project2dImageTo3dBall(gray_2D_input_image, ball, sinX, cosX, sinY, cosY, sinZ, cosZ);
 
        // TBD - FOR DEBUG
        // outputGrayImg = gray_2D_input_image.clone();
@@ -3752,36 +3810,27 @@ namespace golf_sim {
         // Must be called prior to using the iteration() operator
         static void setup(const GolfBall *currentBall,
                           cv::Mat& projectedImg,
-                          const double& x_rotation_degreesAngleRad,
-                          const double& y_rotation_degreesAngleRad,
-                          const double& z_rotation_degreesAngleRad ) {
+                          double sinX, double cosX,
+                          double sinY, double cosY,
+                          double sinZ, double cosZ) {
             currentBall_ = currentBall;
             projectedImg_ = projectedImg;
             // Copy the rows/cols from the image because openCV will not do so otherwise
             // TBD - Kind of a hack
             projectedImg_.rows = projectedImg.rows;
             projectedImg_.cols = projectedImg.cols;
-            x_rotation_degreesAngleRad_ = x_rotation_degreesAngleRad;
-            y_rotation_degreesAngleRad_ = y_rotation_degreesAngleRad;
-            z_rotation_degreesAngleRad_ = z_rotation_degreesAngleRad;
 
-            // Pre-compute the trig functions for speed.  They will be the same for all pixels in the image
-            sinX_ = sin(x_rotation_degreesAngleRad_);
-            cosX_ = cos(x_rotation_degreesAngleRad_);
-            sinY_ = sin(y_rotation_degreesAngleRad_);
-            cosY_ = cos(y_rotation_degreesAngleRad_);
-            sinZ_ = sin(z_rotation_degreesAngleRad_);
-            cosZ_ = cos(z_rotation_degreesAngleRad_);
+            sinX_ = sinX;
+            cosX_ = cosX;
+            sinY_ = sinY;
+            cosY_ = cosY;
+            sinZ_ = sinZ;
+            cosZ_ = cosZ;
 
             // If some of the angles are 0, then we don't need to do any math at all for that axis or axes
-            /* DELETE OLD
-            rotatingOnX_ = ((int)std::round(1000 * x_rotation_degreesAngleRad_) != 0) ? true : false;
-            rotatingOnY_ = ((int)std::round(1000 * y_rotation_degreesAngleRad_) != 0) ? true : false;
-            rotatingOnZ_ = ((int)std::round(1000 * z_rotation_degreesAngleRad_) != 0) ? true : false;
-            */
-            rotatingOnX_ = (std::abs(x_rotation_degreesAngleRad_) > 0.001) ? true : false;
-            rotatingOnY_ = (std::abs(y_rotation_degreesAngleRad_) > 0.001) ? true : false;
-            rotatingOnZ_ = (std::abs(z_rotation_degreesAngleRad_) > 0.001) ? true : false;
+            rotatingOnX_ = (std::abs(sinX_) > 0.001 || std::abs(cosX_ - 1.0) > 0.001);
+            rotatingOnY_ = (std::abs(sinY_) > 0.001 || std::abs(cosY_ - 1.0) > 0.001);
+            rotatingOnZ_ = (std::abs(sinZ_) > 0.001 || std::abs(cosZ_ - 1.0) > 0.001);
         }
 
         // The returned imageXFromCenter and imageYFromCenter are the original imageX & Y in a new coordinate system with the center of the ball at (0,0)
@@ -3978,10 +4027,13 @@ namespace golf_sim {
     // positive Y-axis angles move the ball from the top to the bottom
     // positive Z-Axis angles are counter-clockwise looking down the positive z-axis
     // The image_gray input Mat is expected to have pixels with only 0, 255, or kPixelIgnoreValue
-    cv::Mat BallImageProc::Project2dImageTo3dBall(const cv::Mat& image_gray, const GolfBall& ball, const cv::Vec3i& rotation_angles_degrees) {
+    cv::Mat BallImageProc::Project2dImageTo3dBall(const cv::Mat& image_gray, const GolfBall& ball,
+                                                   double sinX, double cosX,
+                                                   double sinY, double cosY,
+                                                   double sinZ, double cosZ) {
 
         // Create a new 3D Mat to hold the results
-        int sizes[2] = { image_gray.rows, image_gray.cols };  // , image_gray.rows };
+        int sizes[2] = { image_gray.rows, image_gray.cols };
         // It's possible that due to rotations, some of the 3D image might have "holes" where
         // the pixel was not set to a value.  Make sure anything we don't set is ignored.
         cv::Mat projectedImg = cv::Mat(2, sizes, CV_32SC2, cv::Scalar(0, kPixelIgnoreValue));
@@ -3992,11 +4044,7 @@ namespace golf_sim {
 
         // Setup the global structures we need before we do the parallelized callback to process
         // the 2D image
-        projectionOp::setup(&ball, 
-                            projectedImg, 
-                            -(float)CvUtils::DegreesToRadians((double)rotation_angles_degrees[0]),  /* Negative due to rotation in X axis being backward */
-                            (float)CvUtils::DegreesToRadians((double)rotation_angles_degrees[1]),
-                            (float)CvUtils::DegreesToRadians((double)rotation_angles_degrees[2])  );
+        projectionOp::setup(&ball, projectedImg, sinX, cosX, sinY, cosY, sinZ, cosZ);
 
         if (kSerializeOpsForDebug) {
             /*  Serialized version for debugging - use the parallel stuff below for release */

@@ -35,6 +35,41 @@ namespace golf_sim {
 // the comparison should not be performed on the particular pixel
 const uchar kPixelIgnoreValue = 128;
 
+// Caches sin/cos values for fixed rotation search space to avoid
+// computing ~25,000 trig operations per spin analysis
+class TrigLookupCache {
+public:
+    std::vector<double> x_sin_;
+    std::vector<double> x_cos_;
+    std::vector<double> y_sin_;
+    std::vector<double> y_cos_;
+    std::vector<double> z_sin_;
+    std::vector<double> z_cos_;
+
+    int x_start_, x_end_, x_increment_;
+    int y_start_, y_end_, y_increment_;
+    int z_start_, z_end_, z_increment_;
+
+    void Initialize(int x_start, int x_end, int x_inc,
+                   int y_start, int y_end, int y_inc,
+                   int z_start, int z_end, int z_inc);
+
+    inline void GetXTrig(int index, double& sin_val, double& cos_val) const {
+        sin_val = x_sin_[index];
+        cos_val = x_cos_[index];
+    }
+
+    inline void GetYTrig(int index, double& sin_val, double& cos_val) const {
+        sin_val = y_sin_[index];
+        cos_val = y_cos_[index];
+    }
+
+    inline void GetZTrig(int index, double& sin_val, double& cos_val) const {
+        sin_val = z_sin_[index];
+        cos_val = z_cos_[index];
+    }
+};
+
 // Holds one potential rotated golf ball candidate image and associated data
 struct RotationCandidate {
     short index = 0;
@@ -351,6 +386,8 @@ public:
                                           float nms_threshold);
 
 private:
+    static TrigLookupCache coarse_trig_cache_;
+
     // ONNX Runtime detector instance - replaces all static ONNX members
     static std::unique_ptr<ONNXRuntimeDetector> onnx_detector_;
     static std::atomic<bool> onnx_detector_initialized_;
